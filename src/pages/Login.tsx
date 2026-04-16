@@ -1,76 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { signInWithPopup } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { Stethoscope, User as UserIcon, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const { user, profile, loading: authLoading } = useAuth();
+  
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'login' | 'role_selection'>('login');
-  const [tempUser, setTempUser] = useState<any>(null);
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      
-      // Check if user profile exists
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (userDoc.exists()) {
-        const profile = userDoc.data();
-        if (profile.role === 'dentist') {
-          navigate('/dashboard');
-        } else {
-          navigate('/client-dashboard');
-        }
-      } else {
-        // Need to select role
-        setTempUser(user);
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (profile) {
+        navigate(profile.role === 'dentist' ? '/dashboard' : '/client-dashboard');
+      } else if (!isSigningIn) {
         setStep('role_selection');
       }
+    }
+  }, [user, profile, authLoading, isSigningIn, navigate]);
+
+  const handleGoogleSignIn = async () => {
+    setIsSigningIn(true);
+    setError('');
+    try {
+      await signInWithPopup(auth, googleProvider);
+      // Wait for the auth listener in AuthContext to pick up the user & profile
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to sign in');
     } finally {
-      setLoading(false);
+      setIsSigningIn(false);
     }
   };
 
   const handleRoleSelection = async (role: 'dentist' | 'client') => {
-    if (!tempUser) return;
-    setLoading(true);
+    if (!user) return;
+    setIsSigningIn(true);
     setError('');
     
     try {
-      const userDocRef = doc(db, 'users', tempUser.uid);
+      const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, {
-        uid: tempUser.uid,
-        email: tempUser.email,
-        displayName: tempUser.displayName,
-        photoURL: tempUser.photoURL,
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
         role: role,
         createdAt: serverTimestamp(),
         onboardingComplete: false
       });
       
-      if (role === 'dentist') {
-        navigate('/dashboard');
-      } else {
-        navigate('/client-dashboard');
-      }
+      // The onAuthStateChanged listener will eventually trigger and see the profile,
+      // but to avoid delay, we can force navigation here:
+      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to create profile');
     } finally {
-      setLoading(false);
+      setIsSigningIn(false);
     }
   };
 
@@ -101,10 +94,10 @@ export default function Login() {
             <div className="space-y-6">
               <button
                 onClick={handleGoogleSignIn}
-                disabled={loading}
+                disabled={isSigningIn || authLoading}
                 className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-slate-300 rounded-md shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 transition-colors"
               >
-                {loading ? (
+                {(isSigningIn || authLoading) ? (
                   <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
                 ) : (
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -152,7 +145,7 @@ export default function Login() {
               
               <button
                 onClick={() => handleRoleSelection('dentist')}
-                disabled={loading}
+                disabled={isSigningIn}
                 className="w-full flex items-center p-4 border-2 border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50 transition-all text-left group"
               >
                 <div className="bg-teal-100 p-3 rounded-lg group-hover:bg-teal-200 transition-colors">
@@ -166,7 +159,7 @@ export default function Login() {
 
               <button
                 onClick={() => handleRoleSelection('client')}
-                disabled={loading}
+                disabled={isSigningIn}
                 className="w-full flex items-center p-4 border-2 border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left group"
               >
                 <div className="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition-colors">
@@ -178,7 +171,7 @@ export default function Login() {
                 </div>
               </button>
               
-              {loading && (
+              {isSigningIn && (
                 <div className="flex justify-center mt-4">
                   <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
                 </div>

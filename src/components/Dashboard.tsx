@@ -7,15 +7,13 @@ export default function Dashboard() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   
-  // BYOK State
-  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem('gemini_api_key') || '');
+  // BYOK State - strictly memory bound 
+  const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
 
-  // Update session storage when API key changes
   const handleApiKeyChange = (key: string) => {
     setApiKey(key);
-    sessionStorage.setItem('gemini_api_key', key);
   };
 
   const handleAIMatch = async () => {
