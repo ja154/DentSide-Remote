@@ -3,6 +3,8 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import helmet from 'helmet';
+import cors from 'cors';
+import { z } from 'zod';
 import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,20 +16,49 @@ async function startServer() {
 
   app.use(express.json());
   
-  // Basic security headers, but allow inline scripts/styles for Vite dev
+  app.use(cors({
+    origin: process.env.NODE_ENV === 'production' ? process.env.APP_URL || '*' : '*',
+    methods: ['GET', 'POST']
+  }));
+  
+  // Basic security headers, gate CSP to prod only
   app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
     crossOriginEmbedderPolicy: false,
+  }));
+
+  // Schema Validation
+  const ProfileSchema = z.object({
+    experience: z.string().max(100).optional(),
+    licenses: z.array(z.string().max(100)).max(20).optional(),
+    availability: z.string().max(100).optional(),
+    interests: z.array(z.string().max(100)).max(20).optional()
+  });
+
+  const MatchRequestSchema = z.object({
+    apiKey: z.string().max(150),
+    profile: ProfileSchema
+  });
+
+  const ExpectedAISchema = z.array(z.object({
+    title: z.string(),
+    company: z.string(),
+    type: z.string(),
+    rate: z.string(),
+    match: z.string(),
+    tags: z.array(z.string()).optional()
   }));
 
   // BYOK API Endpoint for AI Matchmaker
   app.post('/api/match', async (req, res) => {
     try {
-      const { apiKey, profile } = req.body;
+      const parsedData = MatchRequestSchema.safeParse(req.body);
       
-      if (!apiKey) {
-        return res.status(400).json({ error: 'API Key is required (BYOK)' });
+      if (!parsedData.success) {
+        return res.status(400).json({ error: 'Invalid payload structure', details: parsedData.error.errors });
       }
+
+      const { apiKey, profile } = parsedData.data;
 
       const ai = new GoogleGenAI({ apiKey });
       
@@ -51,7 +82,10 @@ async function startServer() {
       const text = response.text || '[]';
       const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
       
-      res.json(JSON.parse(cleaned));
+      const parsedJSON = JSON.parse(cleaned);
+      const validatedMatches = ExpectedAISchema.parse(parsedJSON);
+      
+      res.json(validatedMatches);
     } catch (error: any) {
       console.error('AI Match Error:', error);
       res.status(500).json({ error: error.message || 'Failed to generate matches' });

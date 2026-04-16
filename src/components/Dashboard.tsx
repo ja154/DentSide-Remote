@@ -8,9 +8,15 @@ export default function Dashboard() {
   const navigate = useNavigate();
   
   // BYOK State
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem('gemini_api_key') || '');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
+
+  // Update session storage when API key changes
+  const handleApiKeyChange = (key: string) => {
+    setApiKey(key);
+    sessionStorage.setItem('gemini_api_key', key);
+  };
 
   const handleAIMatch = async () => {
     if (!apiKey) {
@@ -181,7 +187,7 @@ export default function Dashboard() {
                   type="password" 
                   placeholder="Enter Gemini API Key" 
                   value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                  onChange={(e) => handleApiKeyChange(e.target.value)}
                   className="bg-transparent border-none text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0 flex-1"
                 />
                 <button 
