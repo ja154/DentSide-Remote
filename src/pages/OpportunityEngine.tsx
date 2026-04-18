@@ -64,87 +64,21 @@ export default function OpportunityEngine() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
           {/* Left Column: Featured & High Value */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Card 1: Gig */}
-            <div className="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0px_12px_32px_rgba(25,28,30,0.06)] transition-all group">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined text-3xl">medical_services</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold font-headline group-hover:text-primary transition-colors">Endodontic Specialist Consult</h3>
-                    <p className="text-on-surface-variant font-medium">Skyline Dental Partners • <span className="text-primary">Remote</span></p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="block text-2xl font-bold text-on-surface">$240<span className="text-sm font-medium text-outline">/hr</span></span>
-                  <span className="bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Urgent</span>
-                </div>
+            <div className="bg-surface-container-lowest p-12 text-center rounded-xl shadow-sm border border-dashed border-outline-variant flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-4xl text-outline">search_off</span>
               </div>
-              <p className="text-on-surface-variant mb-6 line-clamp-2 leading-relaxed">Required for complex root canal case reviews and treatment planning sessions. Experience with 3D CBCT imaging interpretation is essential.</p>
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex gap-2">
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">Endodontics</span>
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">CBCT</span>
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">Board Certified</span>
-                </div>
-                <button className="bg-primary-gradient text-white px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide hover:opacity-90 transition-opacity">Apply Now</button>
-              </div>
-            </div>
-
-            {/* Card 2: Gig */}
-            <div className="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0px_12px_32px_rgba(25,28,30,0.06)] transition-all group">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined text-3xl">monitor_heart</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold font-headline group-hover:text-primary transition-colors">Clinical Director (Interim)</h3>
-                    <p className="text-on-surface-variant font-medium">Global Dental Networks • <span className="text-on-surface-variant/70">Hybrid (New York)</span></p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="block text-2xl font-bold text-on-surface">$18k<span className="text-sm font-medium text-outline">/mo</span></span>
-                  <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Contract</span>
-                </div>
-              </div>
-              <p className="text-on-surface-variant mb-6 line-clamp-2 leading-relaxed">Oversee clinical protocols for a multi-location DSO. Focus on quality assurance, mentorship of junior doctors, and implementation of new digital scanning workflows.</p>
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex gap-2">
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">Leadership</span>
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">QA/QC</span>
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">DSO Exp</span>
-                </div>
-                <button className="border border-primary text-primary px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide hover:bg-primary/5 transition-colors">View Details</button>
-              </div>
-            </div>
-
-            {/* Card 3: Consult */}
-            <div className="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0px_12px_32px_rgba(25,28,30,0.06)] transition-all group">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined text-3xl">groups</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold font-headline group-hover:text-primary transition-colors">Tele-Triage Dentist</h3>
-                    <p className="text-on-surface-variant font-medium">BrightSmile Virtual • <span className="text-primary">Remote</span></p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="block text-2xl font-bold text-on-surface">$115<span className="text-sm font-medium text-outline">/hr</span></span>
-                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Ongoing</span>
-                </div>
-              </div>
-              <p className="text-on-surface-variant mb-6 line-clamp-2 leading-relaxed">Weekend and evening shifts available for remote patient assessments. Conduct video consultations and refer to physical clinics as necessary.</p>
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex gap-2">
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">Teledentistry</span>
-                  <span className="bg-surface-container-low text-on-surface-variant px-3 py-1 rounded-sm text-xs font-semibold">Diagnostics</span>
-                </div>
-                <button className="bg-primary-gradient text-white px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide hover:opacity-90 transition-opacity">Apply Now</button>
-              </div>
+              <h4 className="font-bold text-xl mb-2 font-headline">No matching gigs found</h4>
+              <p className="text-on-surface-variant max-w-md mx-auto mb-6">There are currently no active opportunities matching your profile criteria. Check back later or adjust your filters.</p>
+              <button 
+                onClick={() => {
+                  const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                  if (input) input.value = '';
+                }}
+                className="bg-primary/10 text-primary px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide hover:bg-primary/20 transition-colors"
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
 

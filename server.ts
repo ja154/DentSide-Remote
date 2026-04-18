@@ -28,6 +28,7 @@ async function startServer() {
   app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
   }));
 
   // Schema Validation

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 
 // Note on Firebase Security:
 // Firebase configuration keys (apiKey, projectId, etc.) are public by design
@@ -20,5 +20,15 @@ const firebaseConfig = {
 // Initialize defensively to prevent critical failure if environment config is missing
 const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
 export const auth = app ? getAuth(app) : null as any;
-export const db = app ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : null as any;
+
+// Use initializeFirestore with experimentalForceLongPolling to bypass strict proxy WebSocket blocks
+export const db = app ? initializeFirestore(app, { 
+  experimentalForceLongPolling: true 
+}, firebaseConfig.firestoreDatabaseId) : null as any;
+
 export const googleProvider = new GoogleAuthProvider();
+
+// Force account selection to prevent silent hanging or delays when multiple accounts are present
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
