@@ -28,6 +28,13 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     setError('');
+    
+    if (!auth || !db) {
+      setError("Firebase keys are missing. Please configure your .env variables to log in.");
+      setIsSigningIn(false);
+      return;
+    }
+
     try {
       await signInWithPopup(auth, googleProvider);
       // Wait for the auth listener in AuthContext to pick up the user & profile

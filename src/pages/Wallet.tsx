@@ -92,7 +92,7 @@ export default function Wallet() {
             <div className="md:col-span-2 mt-4">
               <div className="flex items-end justify-between mb-6 px-2">
                 <h3 className="text-2xl font-bold font-headline">Recent Activity</h3>
-                <a className="text-primary font-bold text-sm hover:underline" href="#">View Full Ledger</a>
+                <Link to="/wallet" className="text-primary font-bold text-sm hover:underline">View Full Ledger</Link>
               </div>
               <div className="space-y-4">
                 <div className="bg-surface-container-low p-8 text-center rounded-xl border border-dashed border-outline-variant">
@@ -165,7 +165,7 @@ export default function Wallet() {
             <div className="bg-surface-container-low p-6 rounded-xl">
               <h4 className="font-bold text-on-surface mb-2">Need assistance?</h4>
               <p className="text-xs text-on-surface-variant mb-4">Our financial compliance team is available 24/7 for dental practitioners.</p>
-              <a href="#" className="text-primary text-xs font-bold flex items-center gap-1 group">
+              <a href="mailto:support@dentsideremote.com" className="text-primary text-xs font-bold flex items-center gap-1 group">
                 Contact Support 
                 <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
               </a>

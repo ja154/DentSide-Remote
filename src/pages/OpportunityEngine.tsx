@@ -194,7 +194,7 @@ export default function OpportunityEngine() {
               <div className="relative h-full p-6 flex flex-col justify-end">
                 <h5 className="text-white font-headline font-bold text-xl leading-tight mb-2">Upgrade to Consult Pro</h5>
                 <p className="text-on-primary-container text-xs mb-4">Get priority access to high-value specialist consults and daily rate guarantees.</p>
-                <a href="#" className="text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2">Learn More <span className="material-symbols-outlined text-sm">arrow_forward</span></a>
+                <Link to="/verification" className="text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2">Learn More <span className="material-symbols-outlined text-sm">arrow_forward</span></Link>
               </div>
             </div>
           </div>
