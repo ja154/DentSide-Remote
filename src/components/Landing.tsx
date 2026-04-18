@@ -65,9 +65,9 @@ export default function Landing({ onGetStarted }: LandingProps) {
               >
                 Create Free Profile <span className="material-symbols-outlined">rocket_launch</span>
               </button>
-              <button className="w-full sm:w-auto bg-surface-container-lowest hover:bg-surface-container-low text-on-surface border border-outline-variant/30 px-8 py-4 rounded-xl text-sm font-bold tracking-widest uppercase transition-all shadow-sm flex items-center justify-center gap-2 group">
+              <a href="#features" className="w-full sm:w-auto bg-surface-container-lowest hover:bg-surface-container-low text-on-surface border border-outline-variant/30 px-8 py-4 rounded-xl text-sm font-bold tracking-widest uppercase transition-all shadow-sm flex items-center justify-center gap-2 group">
                 <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">play_circle</span> Watch Demo
-              </button>
+              </a>
             </div>
           </motion.div>
         </div>

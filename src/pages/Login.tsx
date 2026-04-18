@@ -12,6 +12,7 @@ export default function Login() {
   const { user, profile, loading: authLoading } = useAuth();
   
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [pendingRoleSelection, setPendingRoleSelection] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'login' | 'role_selection'>('login');
 
@@ -19,11 +20,11 @@ export default function Login() {
     if (!authLoading && user) {
       if (profile) {
         navigate(profile.role === 'dentist' ? '/dashboard' : '/client-dashboard');
-      } else if (!isSigningIn) {
+      } else if (!isSigningIn && !pendingRoleSelection) {
         setStep('role_selection');
       }
     }
-  }, [user, profile, authLoading, isSigningIn, navigate]);
+  }, [user, profile, authLoading, isSigningIn, pendingRoleSelection, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
@@ -37,12 +38,19 @@ export default function Login() {
 
     try {
       await signInWithPopup(auth, googleProvider);
-      // Wait for the auth listener in AuthContext to pick up the user & profile
+      // Ensure we hold the intent so the screen doesn't unexpectedly flicker upon return
+      setPendingRoleSelection(true);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to sign in');
+      setPendingRoleSelection(false);
     } finally {
       setIsSigningIn(false);
+      
+      // If we've finished the popup sign-in and no profile exists yet, manually step to role selection
+      if (!error && auth.currentUser) {
+        setStep('role_selection');
+      }
     }
   };
 

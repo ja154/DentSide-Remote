@@ -10,6 +10,10 @@ interface UserProfile {
   photoURL?: string;
   role: 'dentist' | 'client' | 'admin';
   onboardingComplete?: boolean;
+  experience?: string;
+  licenses?: string[];
+  availability?: string;
+  interests?: string[];
 }
 
 interface AuthContextType {
@@ -72,7 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = async () => {
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {

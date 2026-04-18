@@ -30,10 +30,10 @@ export default function Dashboard() {
         body: JSON.stringify({
           apiKey,
           profile: {
-            experience: (profile as any)?.experience || "General Dental Practitioner",
-            licenses: (profile as any)?.licenses || ["Pending License Review"],
-            availability: (profile as any)?.availability || "Open",
-            interests: (profile as any)?.interests || ["General Consulting", "Teledentistry"]
+            experience: profile?.experience || "General Dental Practitioner",
+            licenses: profile?.licenses || ["Pending License Review"],
+            availability: profile?.availability || "Open",
+            interests: profile?.interests || ["General Consulting", "Teledentistry"]
           }
         })
       });
