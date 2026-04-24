@@ -4,15 +4,16 @@ import {
   Briefcase,
   CheckCircle2,
   CircleAlert,
+  Clock3,
   LayoutDashboard,
   ShieldCheck,
   Upload,
-  User,
+  UserCircle2,
   Wallet,
   X,
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 type FormState = {
@@ -22,9 +23,16 @@ type FormState = {
   issuingState: string;
   licenseNumber: string;
   documentName: string;
+  hasSelfieCheck: boolean;
+  hasDisclosureConsent: boolean;
 };
 
 const STATE_OPTIONS = ['California', 'New York', 'Texas', 'Florida', 'Washington'];
+
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+    isActive ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+  }`;
 
 export default function IdentityVerification() {
   const { profile, updateProfile } = useAuth();
@@ -38,24 +46,30 @@ export default function IdentityVerification() {
     issuingState: STATE_OPTIONS[0],
     licenseNumber: '',
     documentName: '',
+    hasSelfieCheck: false,
+    hasDisclosureConsent: false,
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const completedSteps = useMemo(() => {
+  const checks = useMemo(() => {
     const personalComplete = form.legalName.trim().length > 2 && form.email.includes('@') && form.clinic.trim().length > 2;
     const licenseComplete = form.licenseNumber.trim().length >= 6 && !!form.documentName;
+    const finalReviewComplete = form.hasSelfieCheck && form.hasDisclosureConsent;
+    const completedCount = Number(personalComplete) + Number(licenseComplete) + Number(finalReviewComplete);
 
     return {
       personalComplete,
       licenseComplete,
-      total: Number(personalComplete) + Number(licenseComplete),
+      finalReviewComplete,
+      completedCount,
+      progress: Math.round((completedCount / 3) * 100),
     };
   }, [form]);
 
-  const handleChange = (key: keyof FormState, value: string) => {
+  const handleChange = (key: keyof FormState, value: string | boolean) => {
     setForm((current) => ({ ...current, [key]: value }));
     setError('');
     setSuccess('');
@@ -65,13 +79,16 @@ export default function IdentityVerification() {
     setError('');
     setSuccess('');
 
-    if (!completedSteps.personalComplete) {
+    if (!checks.personalComplete) {
       setError('Please complete all personal information fields with valid values.');
       return;
     }
-
-    if (!completedSteps.licenseComplete) {
+    if (!checks.licenseComplete) {
       setError('Please provide a valid license number and upload a license document.');
+      return;
+    }
+    if (!checks.finalReviewComplete) {
+      setError('Please confirm the identity and consent checkboxes before submitting.');
       return;
     }
 
@@ -81,7 +98,7 @@ export default function IdentityVerification() {
         displayName: form.legalName.trim(),
         onboardingComplete: true,
       });
-      setSuccess('Verification details saved. Our team will review your credentials within 24–48 hours.');
+      setSuccess('Verification submitted. Review typically completes within 24–48 business hours.');
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Unable to save verification details right now.';
       setError(message);
@@ -91,164 +108,169 @@ export default function IdentityVerification() {
   };
 
   return (
-    <div className="bg-background text-on-surface min-h-screen font-body">
-      <header className="bg-[#f7f9fb]/80 backdrop-blur-xl shadow-sm fixed top-0 w-full z-50">
-        <div className="flex justify-between items-center px-6 h-16 w-full">
-          <Link to="/dashboard" className="text-xl font-extrabold text-[#0077B6] tracking-tighter font-headline">DentSide</Link>
+    <div className="min-h-screen bg-background text-on-surface font-body">
+      <header className="fixed top-0 z-50 w-full border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 md:px-6">
+          <Link to="/dashboard" className="text-xl font-extrabold tracking-tight text-primary">DentSide</Link>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <Link to="/dashboard" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm">Dashboard</Link>
-            <Link to="/opportunities" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm">Gigs</Link>
-            <Link to="/wallet" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm">Wallet</Link>
-            <Link to="/verification" className="text-[#0077B6] font-semibold text-sm">Profile</Link>
+          <nav className="hidden items-center gap-2 md:flex">
+            <NavLink to="/dashboard" className={navLinkClass}><LayoutDashboard className="h-4 w-4" />Dashboard</NavLink>
+            <NavLink to="/opportunities" className={navLinkClass}><Briefcase className="h-4 w-4" />Gigs</NavLink>
+            <NavLink to="/wallet" className={navLinkClass}><Wallet className="h-4 w-4" />Wallet</NavLink>
+            <NavLink to="/verification" className={navLinkClass}><UserCircle2 className="h-4 w-4" />Profile</NavLink>
           </nav>
 
-          <div className="flex items-center gap-4 relative">
+          <div className="relative flex items-center gap-2">
             <button
               type="button"
               onClick={() => setShowNotifications((current) => !current)}
-              className="relative text-slate-600 hover:bg-[#f7f9fb] transition-colors p-2 rounded-full"
+              className="relative rounded-xl p-2 text-slate-600 transition-colors hover:bg-slate-100"
               aria-label="Toggle notifications"
             >
-              <Bell size={18} />
-              <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] rounded-full bg-[#0077B6] text-white flex items-center justify-center">2</span>
+              <Bell className="h-5 w-5" />
+              <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-primary text-[10px] font-semibold text-white">2</span>
             </button>
             {showNotifications && (
-              <div className="absolute top-12 right-0 w-72 bg-white border border-slate-200 rounded-xl shadow-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-sm">Notifications</h4>
+              <div className="absolute right-0 top-12 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-sm font-bold">Verification tips</h4>
                   <button type="button" onClick={() => setShowNotifications(false)} aria-label="Close notifications">
-                    <X size={14} className="text-slate-500" />
+                    <X className="h-4 w-4 text-slate-500" />
                   </button>
                 </div>
-                <p className="text-xs text-slate-600">Verification reminder: upload a valid license photo for faster approval.</p>
+                <p className="text-xs text-slate-600">Use a clear scan and match your legal name exactly as listed on the license board.</p>
               </div>
             )}
-            <div className="w-8 h-8 rounded-full bg-primary-fixed overflow-hidden ring-2 ring-primary-container/20">
-              <img className="w-full h-full object-cover" src={profile?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'} alt="User avatar" />
+            <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-primary/20">
+              <img className="h-full w-full object-cover" src={profile?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'} alt="User avatar" />
             </div>
           </div>
         </div>
       </header>
 
-      <main className="pt-24 pb-32 px-4 md:px-8 max-w-6xl mx-auto">
-        <section className="mb-10 flex flex-wrap items-center justify-between gap-4">
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-24 md:px-6">
+        <section className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-3 font-headline">Profile & Identity Verification</h1>
-            <p className="text-on-surface-variant text-lg max-w-2xl leading-relaxed">Complete your professional profile to unlock high-trust remote opportunities and credentialed consult workflows.</p>
+            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">Profile verification</h1>
+            <p className="mt-2 max-w-2xl text-slate-600">Complete all three steps to unlock verified status, premium gigs, and faster client trust.</p>
           </div>
-          <div className="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-semibold">
-            Progress: {completedSteps.total}/2 steps complete
-          </div>
+          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary">Progress: {checks.progress}%</div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <aside className="lg:col-span-4 space-y-4">
-            <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-5">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={20} className={completedSteps.personalComplete ? 'text-emerald-600' : 'text-slate-400'} />
-                <div>
-                  <h3 className="font-bold">Step 1: Personal Information</h3>
-                  <p className="text-xs text-on-surface-variant">Name, email, and active clinic details.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={20} className={completedSteps.licenseComplete ? 'text-emerald-600' : 'text-slate-400'} />
-                <div>
-                  <h3 className="font-bold">Step 2: License Verification</h3>
-                  <p className="text-xs text-on-surface-variant">Issuing state, license number, and document upload.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <ShieldCheck size={20} className={completedSteps.total === 2 ? 'text-emerald-600' : 'text-slate-400'} />
-                <div>
-                  <h3 className="font-bold">Step 3: Review Status</h3>
-                  <p className="text-xs text-on-surface-variant">Our team will review submitted details in 24–48 business hours.</p>
-                </div>
-              </div>
+        <div className="mb-6 h-2 w-full rounded-full bg-slate-100">
+          <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${checks.progress}%` }} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <aside className="space-y-4 lg:col-span-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500">Verification stages</h2>
+              <ol className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className={`mt-0.5 h-5 w-5 ${checks.personalComplete ? 'text-emerald-600' : 'text-slate-300'}`} />
+                  <div>
+                    <p className="font-semibold">1. Profile details</p>
+                    <p className="text-xs text-slate-500">Legal name, practice email, and clinic name.</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className={`mt-0.5 h-5 w-5 ${checks.licenseComplete ? 'text-emerald-600' : 'text-slate-300'}`} />
+                  <div>
+                    <p className="font-semibold">2. License upload</p>
+                    <p className="text-xs text-slate-500">Issuing state, license number, and readable document.</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Clock3 className={`mt-0.5 h-5 w-5 ${checks.finalReviewComplete ? 'text-emerald-600' : 'text-slate-300'}`} />
+                  <div>
+                    <p className="font-semibold">3. Consent & review</p>
+                    <p className="text-xs text-slate-500">Confirm identity check and submission consent.</p>
+                  </div>
+                </li>
+              </ol>
             </div>
 
-            <div className="bg-primary-container/5 p-6 rounded-xl border border-primary-container/10">
-              <div className="flex items-center gap-3 text-primary mb-2">
-                <ShieldCheck size={18} />
-                <h4 className="font-bold font-headline">Privacy Guaranteed</h4>
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+              <div className="mb-2 flex items-center gap-2 text-primary">
+                <ShieldCheck className="h-4 w-4" />
+                <h3 className="font-semibold">Secure verification</h3>
               </div>
-              <p className="text-sm text-on-secondary-container leading-relaxed">Your verification data is encrypted and used only for provider credentialing and trust controls.</p>
+              <p className="text-sm text-slate-600">Documents are encrypted and used only for credential checks and platform trust controls.</p>
             </div>
           </aside>
 
-          <div className="lg:col-span-8 space-y-6">
-            <section className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border-l-4 border-primary-container">
-              <h2 className="text-2xl font-extrabold tracking-tight font-headline mb-6">Professional Profile</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Legal Full Name</label>
+          <div className="space-y-6 lg:col-span-8">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-5 text-xl font-bold">Step 1: Professional profile</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Legal full name</label>
                   <input
                     type="text"
                     value={form.legalName}
                     onChange={(event) => handleChange('legalName', event.target.value)}
-                    className="w-full bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-primary-container"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none ring-primary transition focus:ring-2"
                     placeholder="Dr. Julianne Mercer"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Email Address</label>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Email address</label>
                   <input
                     type="email"
                     value={form.email}
                     onChange={(event) => handleChange('email', event.target.value)}
-                    className="w-full bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-primary-container"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none ring-primary transition focus:ring-2"
                     placeholder="j.mercer@dentalhub.com"
                   />
                 </div>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Current Clinic / Institution</label>
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Current clinic / institution</label>
                   <input
                     type="text"
                     value={form.clinic}
                     onChange={(event) => handleChange('clinic', event.target.value)}
-                    className="w-full bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-primary-container"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none ring-primary transition focus:ring-2"
                     placeholder="St. Apollonia Dental Center"
                   />
                 </div>
               </div>
             </section>
 
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-surface-container-low p-8 rounded-xl">
-                <h3 className="text-xl font-bold font-headline mb-4">License Details</h3>
+            <section className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-xl font-bold">Step 2: License details</h3>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Issuing State</label>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Issuing state</label>
                     <select
                       value={form.issuingState}
                       onChange={(event) => handleChange('issuingState', event.target.value)}
-                      className="w-full bg-surface-container-lowest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary-container"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none ring-primary transition focus:ring-2"
                     >
                       {STATE_OPTIONS.map((state) => (
                         <option key={state} value={state}>{state}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">License Number</label>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">License number</label>
                     <input
                       type="text"
                       value={form.licenseNumber}
                       onChange={(event) => handleChange('licenseNumber', event.target.value)}
-                      className="w-full bg-surface-container-lowest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary-container"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none ring-primary transition focus:ring-2"
                       placeholder="DDS-123456"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-surface-container-highest/40 border-2 border-dashed border-outline-variant p-8 rounded-xl flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-full bg-primary-container/10 flex items-center justify-center mb-4">
-                  <Upload size={28} className="text-primary-container" />
+              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                <div className="mb-3 rounded-full bg-primary/10 p-4 text-primary">
+                  <Upload className="h-6 w-6" />
                 </div>
-                <h4 className="font-bold text-on-surface font-headline">Upload License Document</h4>
-                <p className="text-xs text-on-surface-variant mt-2 px-4 leading-relaxed">PDF, JPG, or PNG. Ensure all text is clear and document edges are visible.</p>
+                <h4 className="font-semibold">Upload license document</h4>
+                <p className="mt-1 text-xs text-slate-500">Accepted: PDF, JPG, PNG. Ensure all text is legible.</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -259,66 +281,76 @@ export default function IdentityVerification() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-6 text-sm font-bold text-primary underline decoration-2 underline-offset-4"
+                  className="mt-4 rounded-xl border border-primary/20 bg-white px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
                 >
-                  Browse Files
+                  Choose file
                 </button>
-                {form.documentName && (
-                  <p className="mt-3 text-xs text-emerald-700 font-semibold">Selected: {form.documentName}</p>
-                )}
+                {form.documentName && <p className="mt-3 text-xs font-semibold text-emerald-600">Selected: {form.documentName}</p>}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-3 text-xl font-bold">Step 3: Final review</h3>
+              <div className="space-y-3 text-sm">
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50">
+                  <input
+                    type="checkbox"
+                    checked={form.hasSelfieCheck}
+                    onChange={(event) => handleChange('hasSelfieCheck', event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                  />
+                  <span>I confirm the uploaded license belongs to me and matches my legal name.</span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50">
+                  <input
+                    type="checkbox"
+                    checked={form.hasDisclosureConsent}
+                    onChange={(event) => handleChange('hasDisclosureConsent', event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                  />
+                  <span>I consent to DentSide reviewing this information for verification and trust controls.</span>
+                </label>
               </div>
             </section>
 
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-start gap-2">
-                <CircleAlert size={16} className="mt-0.5" />
-                {error}
+              <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <CircleAlert className="mt-0.5 h-4 w-4" /> {error}
               </div>
             )}
-
             {success && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 flex items-start gap-2">
-                <CheckCircle2 size={16} className="mt-0.5" />
-                {success}
+              <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+                <CheckCircle2 className="mt-0.5 h-4 w-4" /> {success}
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-2">
-              <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-2 text-on-surface-variant font-bold hover:text-on-surface transition-colors">
-                <ArrowLeft size={16} />
-                Back
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-10 py-4 rounded-xl font-bold text-sm tracking-widest uppercase shadow-lg shadow-primary-container/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Verification'}
+                {isSubmitting ? 'Submitting…' : 'Submit verification'}
               </button>
             </div>
           </div>
         </div>
       </main>
 
-      <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-3xl bg-white/80 backdrop-blur-xl shadow-[0px_-12px_32px_rgba(25,28,30,0.06)] border-t border-slate-100/10">
-        <div className="flex justify-around items-center px-4 h-20 w-full pb-safe">
-          <Link to="/dashboard" className="flex flex-col items-center justify-center text-slate-400">
-            <LayoutDashboard size={18} />
-            <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Dashboard</span>
-          </Link>
-          <Link to="/opportunities" className="flex flex-col items-center justify-center text-slate-400">
-            <Briefcase size={18} />
-            <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Gigs</span>
-          </Link>
-          <Link to="/wallet" className="flex flex-col items-center justify-center text-slate-400">
-            <Wallet size={18} />
-            <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Wallet</span>
-          </Link>
-          <Link to="/verification" className="flex flex-col items-center justify-center bg-[#0077B6]/10 text-[#0077B6] rounded-xl px-4 py-1">
-            <User size={18} />
-            <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Profile</span>
-          </Link>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-2 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-md items-center justify-around">
+          <NavLink to="/dashboard" className={navLinkClass}><LayoutDashboard className="h-4 w-4" />Home</NavLink>
+          <NavLink to="/opportunities" className={navLinkClass}><Briefcase className="h-4 w-4" />Gigs</NavLink>
+          <NavLink to="/wallet" className={navLinkClass}><Wallet className="h-4 w-4" />Wallet</NavLink>
+          <NavLink to="/verification" className={navLinkClass}><UserCircle2 className="h-4 w-4" />Profile</NavLink>
         </div>
       </nav>
     </div>
