@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Bell, Loader2, X } from 'lucide-react';
 
 export default function Dashboard() {
   const { profile, logout } = useAuth();
@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleApiKeyChange = (key: string) => {
     setApiKey(key);
@@ -77,9 +78,27 @@ export default function Dashboard() {
           >
             Logout
           </button>
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-[#0077B6]">notifications</span>
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowNotifications((current) => !current)}
+              className="p-2 rounded-full hover:bg-surface-container transition-colors text-[#0077B6]"
+              aria-label="Toggle notifications"
+            >
+              <Bell className="w-5 h-5" />
+            </button>
+            {showNotifications && (
+              <div className="absolute top-12 right-0 w-72 bg-white border border-slate-200 rounded-xl shadow-lg p-4 z-10">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold">Notifications</h4>
+                  <button type="button" onClick={() => setShowNotifications(false)} aria-label="Close notifications">
+                    <X className="w-4 h-4 text-slate-500" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600">No urgent alerts. Your credential verification status is up to date.</p>
+              </div>
+            )}
+          </div>
           <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/10">
             <img alt="User avatar" className="w-full h-full object-cover" src={profile?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} />
           </div>
