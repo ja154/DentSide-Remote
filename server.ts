@@ -171,8 +171,15 @@ Return ONLY a raw JSON array of objects with the exact following keys:
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+    const spaFallbackLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 300,
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
+
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    app.get('*', spaFallbackLimiter, (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
