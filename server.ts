@@ -110,7 +110,7 @@ async function startServer() {
 
   app.use(
     helmet({
-      contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
+      contentSecurityPolicy: undefined,
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: false,
       referrerPolicy: { policy: 'no-referrer' },
