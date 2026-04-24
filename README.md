@@ -34,4 +34,6 @@ The app is configured to be deployed as a full-stack application.
 
 ## Security
 - API keys provided via the BYOK interface are only used for the duration of the session and are not stored permanently.
-- Basic security headers are implemented via Helmet.
+- API payloads are validated with Zod on the server, including profile shape and BYOK key formatting.
+- Request size limits, rate limiting, and a global error handler reduce abuse and prevent accidental data leakage through raw stack traces.
+- Security headers are enforced with Helmet, including stricter referrer behavior.

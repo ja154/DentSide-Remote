@@ -9,6 +9,7 @@
 - [ ] Build Gig marketplace (Freelance focus)
 - [ ] Integrate Payments (M-Pesa, Stripe)
 - [ ] Implement Simple matching (rule-based + basic AI)
+- [x] Harden AI match API (request validation, body limits, request IDs, sanitized error responses)
 
 ## 🟡 PHASE 2 — Teledentistry Layer (3–6 months)
 **Focus:** Second opinions, Treatment planning (No prescriptions initially to avoid legal risk).
