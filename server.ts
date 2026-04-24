@@ -1,4 +1,4 @@
-import cors, { type CorsOptions } from 'cors';
+import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -11,7 +11,6 @@ import { ZodError, z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 
 type AppErrorCode = 'bad_request' | 'upstream_error' | 'internal_error';
 
@@ -30,6 +29,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().max(65535).default(3000),
   APP_URL: z.string().url().optional(),
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
 const env = EnvSchema.parse(process.env);
@@ -37,6 +37,13 @@ const env = EnvSchema.parse(process.env);
 if (env.NODE_ENV === 'production' && !env.APP_URL) {
   throw new Error('APP_URL must be set in production.');
 }
+
+const parsedAllowedOrigins = (env.ALLOWED_ORIGINS ?? env.APP_URL ?? 'http://localhost:3000,http://127.0.0.1:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set(parsedAllowedOrigins);
 
 const ProfileSchema = z.object({
   experience: z.string().max(100).optional(),
@@ -101,16 +108,39 @@ async function startServer() {
     next();
   });
 
-  const corsOptions: CorsOptions = {
-    origin: env.NODE_ENV === 'production' ? env.APP_URL : '*',
-    methods: ['GET', 'POST'],
-  };
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
 
-  app.use(cors(corsOptions));
+        if (allowedOrigins.has(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new AppError('CORS origin denied.', 403, 'bad_request'));
+      },
+      methods: ['GET', 'POST'],
+    }),
+  );
 
   app.use(
     helmet({
-      contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          "default-src": ["'self'"],
+          "base-uri": ["'self'"],
+          "frame-ancestors": ["'none'"],
+          "img-src": ["'self'", 'https:', 'data:'],
+          "script-src": env.NODE_ENV === 'production' ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          "style-src": env.NODE_ENV === 'production' ? ["'self'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'"],
+          "connect-src": ["'self'", ...parsedAllowedOrigins],
+        },
+      },
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: false,
       referrerPolicy: { policy: 'no-referrer' },
@@ -121,6 +151,14 @@ async function startServer() {
     windowMs: 15 * 60 * 1000,
     max: 50,
     message: { error: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const staticLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    message: { error: 'Too many requests for static resources, please retry later.' },
     standardHeaders: true,
     legacyHeaders: false,
   });
@@ -171,8 +209,9 @@ Return ONLY a raw JSON array of objects with the exact following keys:
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+    app.use(staticLimiter);
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    app.get('*', staticLimiter, (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
