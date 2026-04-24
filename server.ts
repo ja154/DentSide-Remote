@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { ZodError, z } from 'zod';
+import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,25 @@ class AppError extends Error {
     this.code = code;
   }
 }
+
+const EnvSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().max(65535).default(3000),
+  APP_URL: z.string().url().optional(),
+});
+
+const env = EnvSchema.parse(process.env);
+
+if (env.NODE_ENV === 'production' && !env.APP_URL) {
+  throw new Error('APP_URL must be set in production.');
+}
+
+const ProfileSchema = z.object({
+  experience: z.string().max(100).optional(),
+  licenses: z.array(z.string().max(100)).max(20).optional(),
+  availability: z.string().max(100).optional(),
+  interests: z.array(z.string().max(100)).max(20).optional(),
+});
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -78,6 +98,7 @@ const toCleanJson = (text: string): unknown => {
   } catch {
     throw new AppError('AI provider returned malformed JSON.', 502, 'upstream_error');
   }
+  return JSON.parse(cleaned);
 };
 
 const asyncHandler =
@@ -111,6 +132,7 @@ async function startServer() {
   app.use(
     helmet({
       contentSecurityPolicy: undefined,
+      contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: false,
       referrerPolicy: { policy: 'no-referrer' },
@@ -180,6 +202,7 @@ Return ONLY a raw JSON array of objects with the exact following keys:
 
     app.use(express.static(distPath));
     app.get('*', spaFallbackLimiter, (_req, res) => {
+    app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
@@ -205,6 +228,7 @@ Return ONLY a raw JSON array of objects with the exact following keys:
     if (error instanceof AppError) {
       console.error(`[${requestId}] ${error.code}:`, error.message);
       res.status(error.statusCode).json({ error: error.message, code: error.code, requestId });
+      res.status(400).json({ error: 'Invalid JSON payload', requestId });
       return;
     }
 
@@ -212,6 +236,9 @@ Return ONLY a raw JSON array of objects with the exact following keys:
     console.error(`[${requestId}] internal_error:`, message);
 
     res.status(500).json({ error: 'Failed to process request', code: 'internal_error', requestId });
+    console.error(`[${requestId}]`, message);
+
+    res.status(500).json({ error: 'Failed to process request', requestId });
   });
 
   app.listen(env.PORT, '0.0.0.0', () => {
