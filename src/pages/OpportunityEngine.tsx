@@ -1,34 +1,18 @@
 import {
   ArrowRight,
+  Bell,
   Briefcase,
   ChevronDown,
   CirclePlus,
+  LayoutDashboard,
   Search,
   SearchX,
   SlidersHorizontal,
-  User,
+  UserCircle2,
   Wallet,
-  X,
-} from 'lucide-react';
-import { type ReactNode, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-
-type Opportunity = {
-  id: string;
-  title: string;
-  company: string;
-  type: 'Insurance' | 'Freelance' | 'Teledentistry';
-  location: 'Remote Only' | 'Hybrid';
-  rate: number;
-  tags: string[];
-};
-
-  Bell,
-  LayoutDashboard,
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 type FilterPillProps = {
@@ -37,22 +21,22 @@ type FilterPillProps = {
   icon?: ReactNode;
 };
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+    isActive ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+  }`;
+
 function FilterPill({ label, value, icon }: FilterPillProps) {
   return (
-    <div className="bg-surface-container-lowest px-4 h-11 flex items-center gap-2 rounded-lg cursor-pointer hover:bg-white transition-colors shadow-sm">
-      <span className="text-xs font-bold uppercase tracking-wider text-outline font-label">{label}</span>
-      <span className="text-sm font-semibold text-on-surface">{value}</span>
+    <button className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 shadow-sm transition-colors hover:bg-slate-50">
+      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
+      <span className="text-sm font-semibold">{value}</span>
       {icon}
-    </div>
+    </button>
   );
 }
 
-const TRENDING_SKILLS = [
-  { name: 'Invisalign', accent: 'bg-primary' },
-  { name: 'iTero Scanning', accent: 'bg-primary' },
-  { name: 'Dental AI', accent: 'bg-tertiary-container' },
-  { name: 'Sleep Apnea', accent: 'bg-primary' },
-];
+const TRENDING_SKILLS = ['Invisalign', 'iTero Scanning', 'Dental AI', 'Sleep Apnea'];
 
 export default function OpportunityEngine() {
   const { profile } = useAuth();
@@ -60,41 +44,39 @@ export default function OpportunityEngine() {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <div className="bg-background text-on-surface font-body min-h-screen pb-24 md:pb-0">
-      <header className="fixed top-0 w-full z-50 bg-[#f7f9fb]/80 backdrop-blur-xl shadow-sm h-16 px-6 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <span className="text-xl font-extrabold text-[#0077B6] tracking-tighter font-headline">DentSide</span>
-        </div>
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/dashboard" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Dashboard</Link>
-          <Link to="/opportunities" className="text-[#0077B6] font-semibold text-sm font-label transition-colors">Gigs</Link>
-          <Link to="/wallet" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Wallet</Link>
-          <Link to="/verification" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Profile</Link>
-        </nav>
-        <div className="flex items-center gap-4">
-          <button className="p-2 rounded-full text-[#0077B6] hover:bg-[#f7f9fb] transition-colors scale-95 active:duration-100" aria-label="Open notifications">
-            <Bell size={20} />
-          </button>
-          <div className="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden">
-            <img alt="User avatar" src={profile?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'} />
+    <div className="min-h-screen bg-background pb-24 text-on-surface font-body md:pb-0">
+      <header className="fixed top-0 z-50 w-full border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 md:px-6">
+          <Link to="/dashboard" className="text-xl font-extrabold tracking-tight text-primary">DentSide</Link>
+          <nav className="hidden items-center gap-2 md:flex">
+            <NavLink to="/dashboard" className={navLinkClass}><LayoutDashboard className="h-4 w-4" />Dashboard</NavLink>
+            <NavLink to="/opportunities" className={navLinkClass}><Briefcase className="h-4 w-4" />Gigs</NavLink>
+            <NavLink to="/wallet" className={navLinkClass}><Wallet className="h-4 w-4" />Wallet</NavLink>
+            <NavLink to="/verification" className={navLinkClass}><UserCircle2 className="h-4 w-4" />Profile</NavLink>
+          </nav>
+          <div className="flex items-center gap-3">
+            <button className="rounded-xl p-2 text-slate-600 hover:bg-slate-100" aria-label="Open notifications"><Bell className="h-5 w-5" /></button>
+            <div className="h-8 w-8 overflow-hidden rounded-full border border-slate-200">
+              <img alt="User avatar" src={profile?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'} />
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="pt-24 px-6 max-w-7xl mx-auto">
+      <main className="mx-auto max-w-7xl px-4 pt-24 md:px-6">
         <div className="mb-10">
-          <h1 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2">Opportunity Engine</h1>
-          <p className="text-on-surface-variant text-lg max-w-2xl leading-relaxed">Find your next clinical challenge. Filter through verified dental gigs, specialist consults, and remote opportunities.</p>
+          <h1 className="mb-2 text-4xl font-extrabold tracking-tight md:text-5xl">Opportunity Engine</h1>
+          <p className="max-w-2xl text-lg text-slate-600">Find verified remote dental gigs, specialist consults, and high-trust opportunities that match your profile.</p>
         </div>
 
-        <section className="bg-surface-container-low rounded-xl p-4 mb-8 flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[240px] relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+        <section className="mb-8 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="w-full bg-surface-container-lowest border-none rounded-lg pl-10 h-11 text-sm focus:ring-2 focus:ring-primary"
+              className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 text-sm outline-none ring-primary focus:ring-2"
               placeholder="Search by role or clinic name..."
             />
           </div>
@@ -105,89 +87,64 @@ export default function OpportunityEngine() {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
-          <div className="lg:col-span-8 space-y-6">
-            <div className="bg-surface-container-lowest p-12 text-center rounded-xl shadow-sm border border-dashed border-outline-variant flex flex-col items-center justify-center">
-              <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mb-4">
-                <SearchX size={32} className="text-outline" />
+        <div className="grid grid-cols-1 gap-8 pb-12 lg:grid-cols-12">
+          <div className="space-y-6 lg:col-span-8">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                <SearchX className="h-8 w-8 text-slate-400" />
               </div>
-              <h4 className="font-bold text-xl mb-2 font-headline">No matching gigs found</h4>
-              <p className="text-on-surface-variant max-w-md mx-auto mb-6">There are currently no active opportunities matching your profile criteria. Check back later or adjust your filters.</p>
-              <button
-                onClick={() => setSearchQuery('')}
-                className="bg-primary/10 text-primary px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide hover:bg-primary/20 transition-colors"
-              >
-                Clear Filters
-              </button>
+              <h4 className="mb-2 text-xl font-bold">No matching gigs found</h4>
+              <p className="mx-auto mb-6 max-w-md text-slate-600">No active opportunities match your current filters. Clear filters to discover more openings.</p>
+              <button onClick={() => setSearchQuery('')} className="rounded-xl bg-primary/10 px-6 py-2.5 text-sm font-bold text-primary hover:bg-primary/20">Clear filters</button>
             </div>
           </div>
 
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-surface-container p-6 rounded-xl">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-outline mb-4">Your Reach</h4>
-              <div className="space-y-4">
+          <div className="space-y-6 lg:col-span-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-slate-500">Your Reach</h4>
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Profile Visibility</span>
-                  <span className="bg-tertiary-container text-on-tertiary-container px-2 py-1 rounded-full text-[10px] font-bold">TOP 5%</span>
+                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700">TOP 5%</span>
                 </div>
-                <div className="h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[85%] rounded-full"></div>
-                </div>
-                <p className="text-xs text-on-surface-variant">Your profile was viewed by 12 dental clinics in the last 24 hours.</p>
+                <div className="h-2 rounded-full bg-slate-100"><div className="h-full w-[85%] rounded-full bg-primary" /></div>
+                <p className="text-xs text-slate-600">Your profile was viewed by 12 dental clinics in the last 24 hours.</p>
               </div>
             </div>
 
-            <div className="bg-surface-container-lowest border border-outline-variant/10 p-6 rounded-xl">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-outline mb-4">Trending Skills</h4>
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-slate-500">Trending skills</h4>
               <div className="flex flex-wrap gap-2">
                 {TRENDING_SKILLS.map((skill) => (
-                  <div key={skill.name} className="px-3 py-2 bg-surface-container-low rounded-lg flex items-center gap-2">
-                    <span className={`w-1.5 h-1.5 rounded-full ${skill.accent}`}></span>
-                    <span className="text-xs font-bold">{skill.name}</span>
-                  </div>
+                  <div key={skill} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold">{skill}</div>
                 ))}
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-xl bg-primary h-48 group">
-              <img alt="Consulting" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30 group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9pgYMxzufi-afq7d2dPKd5_hv8xSLWqSnEj_DSwYT21vmrrwnXqa0CF4ufWQXUmhJ6TCSBV-kmcqTwPmAbSFS36IYsReSvYmnWUkhWS5ZUPmH7Tr13VWgffyI_dHbwvouPGp_pcqBx3gDZVxlzIeciBDIA3qX9MsR_L7W_futaLf36H9YqnRx3t-E-A9S3wu86KtYXspNXeq3D0wdplnIZk63gEhIhTmkawR61Jw8neW0EDOFaVg1r0mVw6rNhyOZj0ATIW98zvU" />
-              <div className="relative h-full p-6 flex flex-col justify-end">
-                <h5 className="text-white font-headline font-bold text-xl leading-tight mb-2">Upgrade to Consult Pro</h5>
-                <p className="text-on-primary-container text-xs mb-4">Get priority access to high-value specialist consults and daily rate guarantees.</p>
-                <Link to="/verification" className="text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                  Learn More <ArrowRight size={16} />
-                </Link>
-              </div>
+            <div className="overflow-hidden rounded-xl bg-primary p-6 text-white shadow-md">
+              <h5 className="text-xl font-bold">Upgrade to Consult Pro</h5>
+              <p className="mb-4 mt-2 text-sm text-white/90">Get priority access to high-value specialist consults and daily rate guarantees.</p>
+              <Link to="/verification" className="inline-flex items-center gap-2 text-sm font-bold">Learn more <ArrowRight className="h-4 w-4" /></Link>
             </div>
           </div>
         </div>
       </main>
 
-      <nav className="md:hidden fixed bottom-0 w-full z-50 bg-white/80 backdrop-blur-xl rounded-t-3xl shadow-[0px_-12px_32px_rgba(25,28,30,0.06)] border-t border-slate-100/10 h-20 px-4 pb-safe flex justify-around items-center">
-        <Link to="/dashboard" className="flex flex-col items-center justify-center text-slate-400 font-inter text-[11px] font-semibold tracking-wide uppercase">
-          <LayoutDashboard size={18} className="mb-1" />
-          Dashboard
-        </Link>
-        <Link to="/opportunities" className="flex flex-col items-center justify-center bg-[#0077B6]/10 text-[#0077B6] rounded-xl px-4 py-1 font-inter text-[11px] font-semibold tracking-wide uppercase scale-110 duration-200">
-          <Briefcase size={18} className="mb-1" />
-          Gigs
-        </Link>
-        <Link to="/wallet" className="flex flex-col items-center justify-center text-slate-400 font-inter text-[11px] font-semibold tracking-wide uppercase">
-          <Wallet size={18} className="mb-1" />
-          Wallet
-        </Link>
-        <Link to="/verification" className="flex flex-col items-center justify-center text-slate-400 font-inter text-[11px] font-semibold tracking-wide uppercase">
-          <User size={18} className="mb-1" />
-          Profile
-        </Link>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-2 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-md items-center justify-around">
+          <NavLink to="/dashboard" className={navLinkClass}><LayoutDashboard className="h-4 w-4" />Home</NavLink>
+          <NavLink to="/opportunities" className={navLinkClass}><Briefcase className="h-4 w-4" />Gigs</NavLink>
+          <NavLink to="/wallet" className={navLinkClass}><Wallet className="h-4 w-4" />Wallet</NavLink>
+          <NavLink to="/verification" className={navLinkClass}><UserCircle2 className="h-4 w-4" />Profile</NavLink>
+        </div>
       </nav>
 
       <button
         onClick={() => navigate('/opportunities')}
-        className="fixed bottom-24 right-6 md:bottom-8 md:right-8 bg-primary-gradient text-white w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95 z-40"
+        className="fixed bottom-24 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-xl transition-transform hover:scale-110 active:scale-95 md:bottom-8 md:right-8"
         aria-label="Create opportunity alert"
       >
-        <CirclePlus size={22} />
+        <CirclePlus className="h-6 w-6" />
       </button>
     </div>
   );

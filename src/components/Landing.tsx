@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { ArrowRight, BadgeCheck, Briefcase, Building2, PlayCircle, ShieldCheck, Stethoscope, Video } from 'lucide-react';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -9,190 +10,93 @@ interface LandingProps {
 export default function Landing({ onGetStarted }: LandingProps) {
   return (
     <div className="min-h-screen bg-background font-body text-on-surface">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#f7f9fb]/80 backdrop-blur-xl border-b border-outline-variant/20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+      <nav className="fixed top-0 z-50 w-full border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2 text-primary">
-            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>medical_services</span>
-            <span className="text-xl font-extrabold tracking-tighter font-headline">DentSide</span>
+            <Stethoscope className="h-6 w-6" />
+            <span className="text-xl font-extrabold tracking-tight">DentSide</span>
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-on-surface-variant hover:text-primary font-bold text-sm uppercase tracking-widest transition-colors font-label">Features</a>
-            <a href="#pricing" className="text-on-surface-variant hover:text-primary font-bold text-sm uppercase tracking-widest transition-colors font-label">Pricing</a>
+          <div className="hidden items-center gap-6 md:flex">
+            <a href="#features" className="text-sm font-semibold text-slate-600 hover:text-primary">Features</a>
+            <a href="#pricing" className="text-sm font-semibold text-slate-600 hover:text-primary">Pricing</a>
           </div>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={onGetStarted}
-              className="text-primary font-bold text-sm tracking-widest uppercase hover:bg-surface-container transition-colors hidden sm:block px-4 py-2 rounded-xl"
-            >
-              Log In
+          <div className="flex items-center gap-3">
+            <button onClick={onGetStarted} className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:block">
+              Log in
             </button>
-            <button 
-              onClick={onGetStarted}
-              className="bg-primary-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide uppercase hover:opacity-90 shadow-[0_8px_16px_rgba(0,93,144,0.2)] hover:shadow-[0_12px_20px_rgba(0,93,144,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
-            >
-              Start Earning
-              <span className="material-symbols-outlined text-lg">arrow_forward</span>
+            <button onClick={onGetStarted} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90">
+              Start earning <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-40 pb-24 overflow-hidden">
-        <div className="absolute inset-0 bg-primary/5"></div>
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-4xl mx-auto"
-          >
-            <span className="inline-block py-1.5 px-4 rounded-full bg-secondary-container/50 text-primary font-bold text-xs tracking-widest uppercase mb-8 border border-primary/10">
-              The Future of Dental Careers
+      <section className="relative overflow-hidden pb-24 pt-40">
+        <div className="absolute inset-0 bg-primary/5" />
+        <div className="relative z-10 mx-auto max-w-7xl px-6 text-center">
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mx-auto max-w-4xl">
+            <span className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-primary">
+              <BadgeCheck className="h-4 w-4" /> The Future of Dental Careers
             </span>
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-[-0.04em] font-headline text-on-surface mb-8 leading-[1.1]">
-              Your All-in-One <span className="text-primary">Remote Career Hub</span>
+            <h1 className="mb-6 text-5xl font-extrabold tracking-tight md:text-7xl">
+              Your all-in-one <span className="text-primary">remote career hub</span>
             </h1>
-            <p className="text-xl text-on-surface-variant mb-12 leading-relaxed max-w-2xl mx-auto">
-              Stop jumping between platforms. DentSide Remote unifies teledentistry, insurance review, freelance gigs, and corporate roles into a single dashboard.
+            <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-600 md:text-xl">
+              DentSide Remote unifies teledentistry, insurance review, freelance gigs, and corporate roles into one trusted dashboard.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button 
-                onClick={onGetStarted}
-                className="w-full sm:w-auto bg-primary-gradient text-white px-8 py-4 rounded-xl text-sm font-bold tracking-widest uppercase transition-all shadow-[0_8px_20px_rgba(0,93,144,0.25)] hover:shadow-[0_12px_24px_rgba(0,93,144,0.35)] hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
-              >
-                Create Free Profile <span className="material-symbols-outlined">rocket_launch</span>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <button onClick={onGetStarted} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-md hover:bg-primary/90 sm:w-auto">
+                Create free profile <ArrowRight className="h-4 w-4" />
               </button>
-              <a href="#features" className="w-full sm:w-auto bg-surface-container-lowest hover:bg-surface-container-low text-on-surface border border-outline-variant/30 px-8 py-4 rounded-xl text-sm font-bold tracking-widest uppercase transition-all shadow-sm flex items-center justify-center gap-2 group">
-                <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">play_circle</span> Watch Demo
+              <a href="#features" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-8 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto">
+                <PlayCircle className="h-4 w-4 text-primary" /> Watch demo
               </a>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section id="features" className="py-24 bg-background relative z-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold font-headline mb-4">Every Opportunity, One Login</h2>
-            <p className="text-lg text-on-surface-variant max-w-2xl mx-auto">We've consolidated the fragmented remote dental market so you can focus on what you do best: providing clinical expertise.</p>
+      <section id="features" className="py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-extrabold md:text-4xl">Every opportunity, one login</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-slate-600">Focus on clinical excellence while we centralize remote opportunities and credential trust.</p>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard 
-              icon="video_camera_front"
-              title="Teledentistry"
-              description="Built-in HIPAA-compliant video. 5-30 min sessions for emergency advice, triage, and treatment planning."
-            />
-            <FeatureCard 
-              icon="plagiarism"
-              title="Claims Vault"
-              description="Review records remotely for major insurers. Submit expert opinions for prior authorizations."
-            />
-            <FeatureCard 
-              icon="work"
-              title="Freelance Gigs"
-              description="Dental writing, online tutoring, and consulting. Bid on projects or post your own services."
-            />
-            <FeatureCard 
-              icon="apartment"
-              title="Corporate Roles"
-              description="Curated job board for remote roles at DSOs and tech companies. One-click apply."
-            />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <FeatureCard icon={<Video className="h-6 w-6" />} title="Teledentistry" description="Built-in secure video for triage, consults, and treatment planning." />
+            <FeatureCard icon={<ShieldCheck className="h-6 w-6" />} title="Claims Vault" description="Review records remotely and submit expert prior-authorization insights." />
+            <FeatureCard icon={<Briefcase className="h-6 w-6" />} title="Freelance Gigs" description="Bid on writing, tutoring, and consulting projects in one place." />
+            <FeatureCard icon={<Building2 className="h-6 w-6" />} title="Corporate Roles" description="Discover curated remote roles from DSOs and dental tech companies." />
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-surface-container-lowest border-y border-outline-variant/10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-secondary-fixed/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold font-headline mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-lg text-on-surface-variant max-w-2xl mx-auto">Start exploring gigs for free. Upgrade to Consult Pro when you're ready to maximize your clinical earnings.</p>
+      <section id="pricing" className="border-y border-slate-200 bg-slate-50 py-20">
+        <div className="mx-auto grid max-w-4xl gap-6 px-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8">
+            <h3 className="text-3xl font-extrabold">Free</h3>
+            <p className="mt-2 text-sm text-slate-600">Perfect for getting started and building visibility.</p>
+            <button onClick={onGetStarted} className="mt-8 w-full rounded-xl border border-slate-300 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Get started</button>
           </div>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free Tier */}
-            <div className="bg-surface-container flex flex-col p-8 rounded-2xl border border-transparent hover:border-outline-variant/30 transition-colors">
-              <div className="mb-8">
-                <span className="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Base Profile</span>
-                <h3 className="text-4xl font-extrabold font-headline mt-4 mb-2">Free</h3>
-                <p className="text-on-surface-variant text-sm">Perfect for building your digital clinical presence.</p>
-              </div>
-              <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  <span className="text-sm text-on-surface-variant font-medium">Access to freelance gigs</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  <span className="text-sm text-on-surface-variant font-medium">Standard identity verification</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  <span className="text-sm text-on-surface-variant font-medium">Global wallet withdrawals</span>
-                </li>
-              </ul>
-              <button onClick={onGetStarted} className="w-full bg-white border border-outline-variant/30 text-on-surface py-4 rounded-xl text-sm font-bold tracking-widest uppercase hover:bg-surface-container-lowest transition-colors shadow-sm">
-                Get Started
-              </button>
-            </div>
-
-            {/* Pro Tier (Highlighted) */}
-            <div className="bg-primary-gradient p-8 rounded-2xl text-white shadow-2xl relative shadow-primary/20 flex flex-col border border-primary-fixed/20 transform md:-translate-y-4">
-              <div className="absolute top-0 right-0 p-6 pointer-events-none">
-                <span className="material-symbols-outlined text-5xl opacity-20" style={{ fontVariationSettings: "'FILL' 1" }}>military_tech</span>
-              </div>
-              <div className="mb-8 relative z-10">
-                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-white/20">Consult Pro</span>
-                <h3 className="text-4xl font-extrabold font-headline mt-4 mb-2">$49<span className="text-lg font-normal opacity-80">/mo</span></h3>
-                <p className="text-primary-fixed-dim text-sm">The ultimate toolkit for remote dental pioneers.</p>
-              </div>
-              <ul className="space-y-4 mb-10 flex-1 relative z-10">
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary-fixed text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  <span className="text-sm font-medium">Priority matching for high-rate consults</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary-fixed text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  <span className="text-sm font-medium">0% marketplace commission</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary-fixed text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  <span className="text-sm font-medium">Expedited clinical verification</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary-fixed text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  <span className="text-sm font-medium">Premium support network</span>
-                </li>
-              </ul>
-              <button 
-                onClick={onGetStarted} 
-                className="w-full bg-white text-primary py-4 rounded-xl text-sm font-extrabold tracking-widest uppercase hover:bg-surface-container-low transition-all active:scale-95 shadow-[0_8px_16px_rgba(255,255,255,0.15)] relative z-10"
-              >
-                Upgrade to Pro
-              </button>
-            </div>
+          <div className="rounded-2xl bg-primary p-8 text-white shadow-xl">
+            <h3 className="text-3xl font-extrabold">Consult Pro</h3>
+            <p className="mt-2 text-sm text-white/90">Priority matching, expedited verification, and premium support.</p>
+            <button onClick={onGetStarted} className="mt-8 w-full rounded-xl bg-white py-3 text-sm font-bold text-primary hover:bg-slate-100">Upgrade to Pro</button>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-surface-container-low py-12 border-t border-outline-variant/10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="border-t border-slate-200 bg-white py-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 md:flex-row">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>medical_services</span>
-            <span className="text-xl font-extrabold text-on-surface font-headline tracking-tighter">DentSide Remote</span>
+            <Stethoscope className="h-5 w-5 text-primary" />
+            <span className="text-lg font-bold">DentSide Remote</span>
           </div>
-          <p className="text-on-surface-variant text-sm text-center md:text-left">© 2026 DentSide Remote. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link to="/terms" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-bold uppercase tracking-wider">Terms</Link>
-            <Link to="/privacy" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-bold uppercase tracking-wider">Privacy</Link>
-            <a href="mailto:support@dentsideremote.com" className="text-on-surface-variant hover:text-primary transition-colors text-sm font-bold uppercase tracking-wider">Contact</a>
+          <p className="text-sm text-slate-500">© 2026 DentSide Remote. All rights reserved.</p>
+          <div className="flex gap-5 text-sm font-semibold text-slate-600">
+            <Link to="/terms" className="hover:text-primary">Terms</Link>
+            <Link to="/privacy" className="hover:text-primary">Privacy</Link>
+            <a href="mailto:support@dentsideremote.com" className="hover:text-primary">Contact</a>
           </div>
         </div>
       </footer>
@@ -200,14 +104,12 @@ export default function Landing({ onGetStarted }: LandingProps) {
   );
 }
 
-function FeatureCard({ icon, title, description }: { icon: string, title: string, description: string }) {
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant/10 p-6 rounded-2xl hover:shadow-[0px_12px_32px_rgba(25,28,30,0.06)] transition-all group">
-      <div className="bg-primary/5 w-14 h-14 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary/10 transition-all text-primary">
-        <span className="material-symbols-outlined text-3xl">{icon}</span>
-      </div>
-      <h3 className="text-xl font-bold font-headline mb-3">{title}</h3>
-      <p className="text-on-surface-variant text-sm leading-relaxed">{description}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">{icon}</div>
+      <h3 className="text-lg font-bold">{title}</h3>
+      <p className="mt-2 text-sm text-slate-600">{description}</p>
     </div>
   );
 }
