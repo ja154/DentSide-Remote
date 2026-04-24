@@ -8,6 +8,22 @@ import {
   SlidersHorizontal,
   User,
   Wallet,
+  X,
+} from 'lucide-react';
+import { type ReactNode, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+type Opportunity = {
+  id: string;
+  title: string;
+  company: string;
+  type: 'Insurance' | 'Freelance' | 'Teledentistry';
+  location: 'Remote Only' | 'Hybrid';
+  rate: number;
+  tags: string[];
+};
+
   Bell,
   LayoutDashboard,
 } from 'lucide-react';
