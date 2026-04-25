@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Landing from './components/Landing';
 import Dashboard from './components/Dashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import ClientNetwork from './pages/ClientNetwork';
+import ClientAppointments from './pages/ClientAppointments';
 import IdentityVerification from './pages/IdentityVerification';
 import OpportunityEngine from './pages/OpportunityEngine';
 import Wallet from './pages/Wallet';
@@ -93,6 +95,22 @@ function AppRoutes() {
             <ClientDashboard />
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/client/network"
+        element={
+          <ProtectedRoute allowedRole="client">
+            <ClientNetwork />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/appointments"
+        element={
+          <ProtectedRoute allowedRole="client">
+            <ClientAppointments />
+          </ProtectedRoute>
+        }
       />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
