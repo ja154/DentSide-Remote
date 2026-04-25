@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
+import BrandMark from '../components/BrandMark';
 import { useAuth } from '../contexts/AuthContext';
 import { Stethoscope, Users, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -84,13 +85,7 @@ export default function Login() {
 
         <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div style={{ background: 'var(--color-teal)', borderRadius: 8, padding: '6px 8px' }}>
-              <Stethoscope size={18} color="#fff" />
-            </div>
-            <span className="font-display" style={{ fontSize: 20, color: 'var(--color-white)', letterSpacing: '-0.02em' }}>DentSide</span>
-            <span style={{ fontSize: 10, color: 'var(--color-ink-4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Remote</span>
-          </div>
+          <BrandMark size={34} textColor="#fff" subTextColor="rgba(255,255,255,0.85)" />
 
           {/* Hero text */}
           <div>

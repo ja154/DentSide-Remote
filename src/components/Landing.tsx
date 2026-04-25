@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import BrandMark from './BrandMark';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -76,19 +77,7 @@ export default function Landing({ onGetStarted }: LandingProps) {
         background: 'var(--color-ink)',
         backdropFilter: 'blur(12px)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="7" fill="var(--color-teal)"/>
-            <path d="M14 6c-2.2 0-4 1.8-4 4v4h2v-4a2 2 0 0 1 4 0v4h2v-4c0-2.2-1.8-4-4-4Z" fill="white"/>
-            <circle cx="14" cy="18" r="3" fill="white"/>
-          </svg>
-          <span style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '20px',
-            letterSpacing: '-0.02em',
-            color: 'var(--color-white)',
-          }}>DentSide</span>
-        </div>
+        <BrandMark size={30} textColor="#fff" subTextColor="rgba(255,255,255,0.75)" />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
           {NAV_LINKS.map(l => (

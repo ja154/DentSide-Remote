@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import BrandMark from './BrandMark';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck,
   Bell, LogOut, Loader2, Key, Sparkles, CalendarX,
@@ -21,8 +22,7 @@ function Sidebar({ activePath }: { activePath: string }) {
   return (
     <aside className="ds-sidebar">
       <div className="ds-sidebar-logo">
-        <div className="ds-sidebar-logo-mark">DentSide</div>
-        <div className="ds-sidebar-logo-sub">Remote Platform</div>
+        <BrandMark size={32} showText={false} />
       </div>
       <nav className="ds-sidebar-nav">
         <div className="ds-sidebar-section">
