@@ -19,11 +19,7 @@ export default function Wallet() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const showPending = (feature: string) => {
-    alert(`${feature} is pending and will be available soon.`);
-  };
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   return (
     <div className={`ds-layout ${isSidebarOpen ? '' : 'sidebar-collapsed'}`}>

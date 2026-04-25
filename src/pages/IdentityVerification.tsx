@@ -53,11 +53,7 @@ export default function IdentityVerification() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const showPending = (feature: string) => {
-    alert(`${feature} is pending and will be available soon.`);
-  };
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const checks = useMemo(() => {
     const personalComplete = form.legalName.trim().length > 2 && form.email.includes('@') && form.clinic.trim().length > 2;

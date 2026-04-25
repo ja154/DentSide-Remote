@@ -22,11 +22,7 @@ export default function OpportunityEngine() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const showPending = (feature: string) => {
-    alert(`${feature} is pending and will be available soon.`);
-  };
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className={`ds-layout ${isSidebarOpen ? '' : 'sidebar-collapsed'}`}>

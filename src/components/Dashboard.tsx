@@ -63,11 +63,7 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const showPending = (feature: string) => {
-    alert(`${feature} is pending and will be available soon.`);
-  };
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const profileStrength = useMemo(() => {
     const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
@@ -102,7 +98,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className={`ds-layout ${isSidebarOpen ? '' : 'sidebar-collapsed'}`}>
+    <div className="ds-layout">
       <Sidebar
         activePath={location.pathname}
         isOpen={isSidebarOpen}
