@@ -5,7 +5,7 @@ import BrandMark from '../components/BrandMark';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
   Search, SlidersHorizontal, MapPin, DollarSign, SearchX,
-  TrendingUp, PlusSquare
+  TrendingUp, PlusSquare, Menu, X
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -22,11 +22,15 @@ export default function OpportunityEngine() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className="ds-layout">
       {/* Sidebar */}
-      <aside className="ds-sidebar">
+      <aside className={`ds-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <button className="ds-sidebar-close" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation menu">
+          <X size={18} />
+        </button>
         <div className="ds-sidebar-logo">
           <BrandMark size={32} showText={false} />
         </div>
@@ -47,10 +51,18 @@ export default function OpportunityEngine() {
           </div>
         </nav>
       </aside>
+      {isSidebarOpen && <button className="ds-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation backdrop" />}
 
       {/* Top Bar */}
       <header className="ds-topbar">
         <div>
+          <button
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={16} />
+          </button>
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Opportunity Engine</p>
         </div>
         <div className="flex items-center gap-3">
