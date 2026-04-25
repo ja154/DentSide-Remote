@@ -5,10 +5,10 @@ import BrandMark from './BrandMark';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck,
   Bell, LogOut, Loader2, Key, Sparkles, CalendarX,
-  TrendingUp, Clock
+  TrendingUp, Menu, X
 } from 'lucide-react';
 
-function Sidebar({ activePath }: { activePath: string }) {
+function Sidebar({ activePath, isOpen, onClose }: { activePath: string; isOpen: boolean; onClose: () => void }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -20,7 +20,10 @@ function Sidebar({ activePath }: { activePath: string }) {
   ];
 
   return (
-    <aside className="ds-sidebar">
+    <aside className={`ds-sidebar ${isOpen ? 'open' : ''}`}>
+      <button className="ds-sidebar-close" onClick={onClose} aria-label="Close navigation menu">
+        <X size={18} />
+      </button>
       <div className="ds-sidebar-logo">
         <BrandMark size={32} showText={false} />
       </div>
@@ -60,6 +63,7 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const profileStrength = useMemo(() => {
     const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
@@ -95,11 +99,23 @@ export default function Dashboard() {
 
   return (
     <div className="ds-layout">
-      <Sidebar activePath={location.pathname} />
+      <Sidebar
+        activePath={location.pathname}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+      {isSidebarOpen && <button className="ds-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation backdrop" />}
 
       {/* Top Bar */}
       <header className="ds-topbar">
         <div>
+          <button
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={16} />
+          </button>
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>
             Good day, <span style={{ color: 'var(--color-ink)', fontWeight: 600 }}>{profile?.displayName || 'Doctor'}</span>
           </p>
