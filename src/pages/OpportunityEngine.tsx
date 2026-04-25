@@ -5,7 +5,7 @@ import BrandMark from '../components/BrandMark';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
   Search, SlidersHorizontal, MapPin, DollarSign, SearchX,
-  TrendingUp, PlusSquare
+  TrendingUp, PlusSquare, Menu, X
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -22,11 +22,19 @@ export default function OpportunityEngine() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const showPending = (feature: string) => {
+    alert(`${feature} is pending and will be available soon.`);
+  };
 
   return (
-    <div className="ds-layout">
+    <div className={`ds-layout ${isSidebarOpen ? '' : 'sidebar-collapsed'}`}>
       {/* Sidebar */}
-      <aside className="ds-sidebar">
+      <aside className={`ds-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <button className="ds-sidebar-close" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation menu">
+          <X size={18} />
+        </button>
         <div className="ds-sidebar-logo">
           <BrandMark size={32} showText={false} />
         </div>
@@ -47,14 +55,26 @@ export default function OpportunityEngine() {
           </div>
         </nav>
       </aside>
+      {isSidebarOpen && <button className="ds-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation backdrop" />}
 
       {/* Top Bar */}
       <header className="ds-topbar">
         <div>
+          <button
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={16} />
+          </button>
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Opportunity Engine</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
+          <button
+            className="ds-btn ds-btn-ghost ds-btn-sm"
+            style={{ padding: '7px 10px', borderRadius: '50%' }}
+            onClick={() => showPending('Notifications')}
+          >
             <Bell size={15} />
           </button>
           <div className="ds-avatar ds-avatar-md">
@@ -81,9 +101,9 @@ export default function OpportunityEngine() {
             </div>
             {/* Filters */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <FilterChip icon={<SlidersHorizontal size={12} />} label="All Types" />
-              <FilterChip icon={<MapPin size={12} />} label="Remote Only" />
-              <FilterChip icon={<DollarSign size={12} />} label="$100+/hr" />
+              <FilterChip icon={<SlidersHorizontal size={12} />} label="All Types" onClick={() => showPending('Advanced filters')} />
+              <FilterChip icon={<MapPin size={12} />} label="Remote Only" onClick={() => showPending('Location filters')} />
+              <FilterChip icon={<DollarSign size={12} />} label="$100+/hr" onClick={() => showPending('Rate filters')} />
             </div>
           </div>
         </div>
@@ -159,6 +179,7 @@ export default function OpportunityEngine() {
       <button
         className="ds-btn ds-btn-primary"
         style={{ position: 'fixed', bottom: 32, right: 32, width: 52, height: 52, borderRadius: 14, padding: 0, justifyContent: 'center', boxShadow: '0 8px 24px rgba(13,122,107,0.3)', zIndex: 80 }}
+        onClick={() => showPending('Post new opportunity')}
       >
         <PlusSquare size={20} />
       </button>
@@ -166,9 +187,9 @@ export default function OpportunityEngine() {
   );
 }
 
-function FilterChip({ icon, label }: { icon: React.ReactNode; label: string }) {
+function FilterChip({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
-    <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ gap: 6 }}>
+    <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ gap: 6 }} onClick={onClick}>
       {icon} {label}
     </button>
   );

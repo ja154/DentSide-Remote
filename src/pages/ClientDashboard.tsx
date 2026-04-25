@@ -6,6 +6,9 @@ import { LogOut, Search, Calendar, User, ArrowRight } from 'lucide-react';
 export default function ClientDashboard() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
+  const showPending = (feature: string) => {
+    alert(`${feature} is pending and will be available soon.`);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -61,6 +64,7 @@ export default function ClientDashboard() {
           <div className="ds-card" style={{ padding: 28, cursor: 'pointer', transition: 'box-shadow 0.2s' }}
             onMouseOver={e => (e.currentTarget.style.boxShadow = '0 8px 24px rgba(13,122,107,0.1)')}
             onMouseOut={e => (e.currentTarget.style.boxShadow = 'none')}
+            onClick={() => showPending('Dentist directory')}
           >
             <div className="ds-feature-icon" style={{ marginBottom: 16 }}>
               <Search size={20} color="var(--color-teal)" />
@@ -78,6 +82,7 @@ export default function ClientDashboard() {
           <div className="ds-card" style={{ padding: 28, cursor: 'pointer', transition: 'box-shadow 0.2s' }}
             onMouseOver={e => (e.currentTarget.style.boxShadow = '0 8px 24px rgba(13,122,107,0.1)')}
             onMouseOut={e => (e.currentTarget.style.boxShadow = 'none')}
+            onClick={() => showPending('Appointment management')}
           >
             <div className="ds-feature-icon" style={{ marginBottom: 16, background: 'var(--color-amber-light)' }}>
               <Calendar size={20} color="var(--color-amber)" />
@@ -99,7 +104,7 @@ export default function ClientDashboard() {
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', maxWidth: 340, margin: '0 auto 20px' }}>
             You don't have any teledentistry sessions scheduled. Find a dental professional to get started.
           </p>
-          <button className="ds-btn ds-btn-primary ds-btn-sm">
+          <button className="ds-btn ds-btn-primary ds-btn-sm" onClick={() => showPending('Find a dentist')}>
             <Search size={14} /> Find a Dentist
           </button>
         </div>
