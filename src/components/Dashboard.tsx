@@ -121,7 +121,11 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
+          <button
+            className="ds-btn ds-btn-ghost ds-btn-sm"
+            style={{ padding: '7px 10px', borderRadius: '50%' }}
+            onClick={() => showPending('Notifications')}
+          >
             <Bell size={15} />
           </button>
           <div className="ds-avatar ds-avatar-md" style={{ overflow: 'hidden' }}>
