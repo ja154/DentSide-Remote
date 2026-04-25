@@ -92,9 +92,8 @@ export default function ClientLayout({
       {/* Main */}
       <main className="ds-main flex flex-col">
         <div className="flex-1">{children}</div>
-        <SiteFooter className="-mx-8 -mb-12 mt-12" />
+        <SiteFooter className="-mx-8 -mb-12" />
       </main>
     </div>
   );
 }
-
