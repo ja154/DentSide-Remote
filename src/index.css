@@ -165,6 +165,43 @@ body {
   opacity: 1;
 }
 
+.ds-sidebar-toggle {
+  display: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-fog-2);
+  background: var(--color-white);
+  color: var(--color-ink);
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.ds-sidebar-close {
+  display: none;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-ink-3);
+  background: var(--color-ink-2);
+  color: var(--color-fog);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ds-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 15, 14, 0.45);
+  z-index: 95;
+  border: none;
+}
+
 /* Top Bar */
 .ds-topbar {
   background: var(--color-paper);
@@ -685,8 +722,15 @@ body {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  .ds-sidebar { transform: translateX(-100%); }
+  .ds-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+  }
   .ds-sidebar.open { transform: translateX(0); }
+  .ds-sidebar-close,
+  .ds-sidebar-toggle {
+    display: inline-flex;
+  }
   .ds-topbar, .ds-main { margin-left: 0; }
   .ds-grid-2, .ds-grid-3, .ds-grid-4 { grid-template-columns: 1fr; }
   .ds-auth-page { grid-template-columns: 1fr; }
