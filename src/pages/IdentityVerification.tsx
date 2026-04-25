@@ -1,10 +1,24 @@
-import React from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
-  ArrowLeft, Upload, Clock, BadgeCheck, HelpCircle, Lock
+  ArrowLeft, Upload, Clock, BadgeCheck, HelpCircle, Lock, CheckCircle2, CircleAlert
 } from 'lucide-react';
+
+
+type FormState = {
+  legalName: string;
+  email: string;
+  clinic: string;
+  issuingState: string;
+  licenseNumber: string;
+  documentName: string;
+  hasSelfieCheck: boolean;
+  hasDisclosureConsent: boolean;
+};
+
+const STATE_OPTIONS = ['California', 'New York', 'Texas', 'Florida', 'Washington', 'Kenya'];
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -20,9 +34,77 @@ const STEPS = [
 ];
 
 export default function IdentityVerification() {
-  const { profile, logout } = useAuth();
+  const { profile, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [form, setForm] = useState<FormState>({
+    legalName: profile?.displayName || '',
+    email: profile?.email || '',
+    clinic: '',
+    issuingState: STATE_OPTIONS[0],
+    licenseNumber: '',
+    documentName: '',
+    hasSelfieCheck: false,
+    hasDisclosureConsent: false,
+  });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const checks = useMemo(() => {
+    const personalComplete = form.legalName.trim().length > 2 && form.email.includes('@') && form.clinic.trim().length > 2;
+    const licenseComplete = form.licenseNumber.trim().length >= 6 && !!form.documentName;
+    const finalReviewComplete = form.hasSelfieCheck && form.hasDisclosureConsent;
+    const completedCount = Number(personalComplete) + Number(licenseComplete) + Number(finalReviewComplete);
+
+    return {
+      personalComplete,
+      licenseComplete,
+      finalReviewComplete,
+      completedCount,
+      progress: Math.round((completedCount / 3) * 100),
+    };
+  }, [form]);
+
+  const handleChange = (key: keyof FormState, value: string | boolean) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setError('');
+    setSuccess('');
+  };
+
+  const handleSubmit = async () => {
+    setError('');
+    setSuccess('');
+
+    if (!checks.personalComplete) {
+      setError('Please complete all personal information fields with valid values.');
+      return;
+    }
+    if (!checks.licenseComplete) {
+      setError('Please provide a valid license number and upload a license document.');
+      return;
+    }
+    if (!checks.finalReviewComplete) {
+      setError('Please confirm the identity and consent checkboxes before submitting.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateProfile({
+        displayName: form.legalName.trim(),
+        onboardingComplete: true,
+      });
+      setSuccess('Verification submitted. Review typically completes within 24–48 business hours.');
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : 'Unable to save verification details right now.';
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="ds-layout">
@@ -128,15 +210,15 @@ export default function IdentityVerification() {
                 <div className="ds-grid-2">
                   <div className="ds-form-group">
                     <label className="ds-label">Legal Full Name</label>
-                    <input type="text" className="ds-input" defaultValue={profile?.displayName || ''} placeholder="Dr. Julianne Mercer" />
+                    <input type="text" className="ds-input" value={form.legalName} onChange={(e) => handleChange('legalName', e.target.value)} placeholder="Dr. Julianne Mercer" />
                   </div>
                   <div className="ds-form-group">
                     <label className="ds-label">Email Address</label>
-                    <input type="email" className="ds-input" defaultValue={profile?.email || ''} placeholder="j.mercer@dental.com" />
+                    <input type="email" className="ds-input" value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="j.mercer@dental.com" />
                   </div>
                   <div className="ds-form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
                     <label className="ds-label">Current Clinic / Institution</label>
-                    <input type="text" className="ds-input" placeholder="St. Apollonia Dental Center" />
+                    <input type="text" className="ds-input" value={form.clinic} onChange={(e) => handleChange('clinic', e.target.value)} placeholder="St. Apollonia Dental Center" />
                   </div>
                 </div>
               </div>
@@ -149,17 +231,15 @@ export default function IdentityVerification() {
                 <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 20 }}>State Licensure</h3>
                 <div className="ds-form-group">
                   <label className="ds-label">Issuing State</label>
-                  <select className="ds-select">
-                    <option>California</option>
-                    <option>New York</option>
-                    <option>Texas</option>
-                    <option>Florida</option>
-                    <option>Kenya</option>
+                  <select className="ds-select" value={form.issuingState} onChange={(e) => handleChange('issuingState', e.target.value)}>
+                    {STATE_OPTIONS.map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="ds-form-group" style={{ marginBottom: 0 }}>
                   <label className="ds-label">License Number</label>
-                  <input type="text" className="ds-input" placeholder="DDS-XXXXXX-2024" />
+                  <input type="text" className="ds-input" value={form.licenseNumber} onChange={(e) => handleChange('licenseNumber', e.target.value)} placeholder="DDS-XXXXXX-2024" />
                 </div>
               </div>
 
@@ -173,6 +253,7 @@ export default function IdentityVerification() {
               }}
                 onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--color-teal-mid)'; e.currentTarget.style.background = 'var(--color-teal-light)'; }}
                 onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--color-fog-2)'; e.currentTarget.style.background = 'var(--color-paper)'; }}
+                onClick={() => fileInputRef.current?.click()}
               >
                 <div className="ds-feature-icon" style={{ marginBottom: 12 }}>
                   <Upload size={18} color="var(--color-teal)" />
@@ -181,17 +262,53 @@ export default function IdentityVerification() {
                 <p style={{ fontSize: 12, color: 'var(--color-ink-4)', lineHeight: 1.55, marginBottom: 16 }}>
                   PDF, JPG, or PNG. Ensure all text is legible and edges are visible.
                 </p>
-                <button className="ds-btn ds-btn-ghost ds-btn-sm">Browse Files</button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(event) => handleChange('documentName', event.target.files?.[0]?.name || '')}
+                  style={{ display: 'none' }}
+                />
+                <button className="ds-btn ds-btn-ghost ds-btn-sm">
+                  {form.documentName ? form.documentName : 'Browse Files'}
+                </button>
               </div>
             </div>
+
+            {/* Final Review */}
+            <div className="ds-card" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 16 }}>Final Review</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form.hasSelfieCheck} onChange={(e) => handleChange('hasSelfieCheck', e.target.checked)} />
+                  <span style={{ fontSize: 13, color: 'var(--color-ink)' }}>I confirm the uploaded license belongs to me and matches my legal name.</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form.hasDisclosureConsent} onChange={(e) => handleChange('hasDisclosureConsent', e.target.checked)} />
+                  <span style={{ fontSize: 13, color: 'var(--color-ink)' }}>I consent to DentSide reviewing this information for verification and trust controls.</span>
+                </label>
+              </div>
+            </div>
+            
+            {error && (
+              <div style={{ padding: 12, borderRadius: 8, background: 'var(--color-ruby)', color: '#fff', fontSize: 13, display: 'flex', gap: 8 }}>
+                <CircleAlert size={16} /> {error}
+              </div>
+            )}
+            {success && (
+              <div style={{ padding: 12, borderRadius: 8, background: 'var(--color-sage)', color: '#fff', fontSize: 13, display: 'flex', gap: 8 }}>
+                <CheckCircle2 size={16} /> {success}
+              </div>
+            )}
 
             {/* Action Bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
               <button onClick={() => navigate(-1)} className="ds-btn ds-btn-ghost ds-btn-sm">
                 <ArrowLeft size={14} /> Back
               </button>
-              <button className="ds-btn ds-btn-primary ds-btn-lg">
-                Submit Verification <BadgeCheck size={16} />
+              <button className="ds-btn ds-btn-primary ds-btn-lg" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Submit Verification'} <BadgeCheck size={16} />
               </button>
             </div>
           </div>

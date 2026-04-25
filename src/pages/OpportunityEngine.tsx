@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
@@ -20,6 +20,7 @@ export default function OpportunityEngine() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="ds-layout">
@@ -76,7 +77,7 @@ export default function OpportunityEngine() {
             {/* Search */}
             <div style={{ position: 'relative', flex: '1 1 240px' }}>
               <Search size={14} color="var(--color-fog-4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-              <input type="text" className="ds-input" placeholder="Search by role or clinic name…" style={{ paddingLeft: 36 }} />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="ds-input" placeholder="Search by role or clinic name…" style={{ paddingLeft: 36 }} />
             </div>
             {/* Filters */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -97,7 +98,7 @@ export default function OpportunityEngine() {
               <p style={{ fontSize: 13, color: 'var(--color-ink-4)', maxWidth: 380, margin: '0 auto 20px', lineHeight: 1.6 }}>
                 There are currently no active opportunities matching your profile criteria. Check back later or adjust your filters.
               </p>
-              <button className="ds-btn ds-btn-ghost ds-btn-sm">Clear Filters</button>
+              <button onClick={() => setSearchQuery('')} className="ds-btn ds-btn-ghost ds-btn-sm">Clear Filters</button>
             </div>
           </div>
 

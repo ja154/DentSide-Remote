@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
@@ -60,6 +60,11 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
+
+  const profileStrength = useMemo(() => {
+    const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
+    return Math.round((points / 3) * 100);
+  }, [profile]);
 
   const handleAIMatch = async () => {
     if (!apiKey) { alert('Please enter your Gemini API Key first.'); return; }
@@ -157,10 +162,10 @@ export default function Dashboard() {
               <ShieldCheck size={16} color="var(--color-amber)" />
             </div>
             <div className="ds-progress-track" style={{ marginBottom: 12 }}>
-              <div className="ds-progress-fill" style={{ width: '40%', background: 'var(--color-amber)' }} />
+              <div className="ds-progress-fill" style={{ width: `${profileStrength}%`, background: 'var(--color-amber)' }} />
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-ink-4)', lineHeight: 1.55, flex: 1 }}>
-              Credentials are <strong style={{ color: 'var(--color-ink)' }}>40% complete</strong>. Add your license to unlock gigs.
+              Credentials are <strong style={{ color: 'var(--color-ink)' }}>{profileStrength}% complete</strong>. Add your license to unlock gigs.
             </p>
             <Link to="/verification" className="ds-btn ds-btn-ghost ds-btn-sm" style={{ marginTop: 20, justifyContent: 'center' }}>
               Update License
