@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
+import { showPending } from '../lib/ui';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
   Search, SlidersHorizontal, MapPin, DollarSign, SearchX,

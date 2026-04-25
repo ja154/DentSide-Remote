@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, LayoutDashboard, LogOut, Search } from 'lucide-react';
+import { Calendar, LayoutDashboard, LogOut, Menu, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
 import SiteFooter from './SiteFooter';
@@ -18,6 +18,7 @@ export default function ClientLayout({
   title: string;
   children: React.ReactNode;
 }) {
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, logout } = useAuth();
@@ -25,7 +26,7 @@ export default function ClientLayout({
   return (
     <div className="ds-layout">
       {/* Sidebar */}
-      <aside className="ds-sidebar">
+      <aside className={`ds-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="ds-sidebar-logo">
           <BrandMark size={32} showText={false} />
         </div>
@@ -41,6 +42,7 @@ export default function ClientLayout({
                   key={href}
                   to={href}
                   className={`ds-nav-item${isActive ? ' active' : ''}`}
+                  onClick={() => setIsSidebarOpen(false)}
                 >
                   <Icon size={16} className="nav-icon" />
                   {label}
@@ -56,6 +58,7 @@ export default function ClientLayout({
               onClick={async () => {
                 await logout();
                 navigate('/');
+                setIsSidebarOpen(false);
               }}
             >
               <LogOut size={16} className="nav-icon" />
@@ -64,12 +67,28 @@ export default function ClientLayout({
           </div>
         </nav>
       </aside>
+      {isSidebarOpen && (
+        <button
+          className="ds-sidebar-backdrop"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close navigation backdrop"
+        />
+      )}
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <p className="text-[13px] text-[var(--color-ink-4)] font-medium">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={16} />
+          </button>
+          <p className="text-[13px] text-[var(--color-ink-4)] font-medium truncate">
           {title}
-        </p>
+          </p>
+        </div>
         <div className="flex items-center gap-3">
           <span className="hidden sm:block text-[13px] text-[var(--color-ink-4)] font-medium">
             {profile?.displayName || profile?.email}
@@ -92,9 +111,8 @@ export default function ClientLayout({
       {/* Main */}
       <main className="ds-main flex flex-col">
         <div className="flex-1">{children}</div>
-        <SiteFooter className="-mx-8 -mb-12 mt-12" />
+        <SiteFooter className="mt-12 -mx-4 -mb-8 sm:-mx-8 sm:-mb-12" />
       </main>
     </div>
   );
 }
-
