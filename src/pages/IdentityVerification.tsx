@@ -4,7 +4,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
-  ArrowLeft, Upload, Clock, BadgeCheck, HelpCircle, Lock, CheckCircle2, CircleAlert
+  ArrowLeft, Upload, Clock, BadgeCheck, HelpCircle, Lock, CheckCircle2, CircleAlert, Menu, X
 } from 'lucide-react';
 
 
@@ -53,6 +53,7 @@ export default function IdentityVerification() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const checks = useMemo(() => {
     const personalComplete = form.legalName.trim().length > 2 && form.email.includes('@') && form.clinic.trim().length > 2;
@@ -108,9 +109,12 @@ export default function IdentityVerification() {
   };
 
   return (
-    <div className="ds-layout">
+    <div className={`ds-layout ${isSidebarOpen ? '' : 'sidebar-collapsed'}`}>
       {/* Sidebar */}
-      <aside className="ds-sidebar">
+      <aside className={`ds-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <button className="ds-sidebar-close" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation menu">
+          <X size={18} />
+        </button>
         <div className="ds-sidebar-logo">
           <BrandMark size={32} showText={false} />
         </div>
@@ -131,12 +135,26 @@ export default function IdentityVerification() {
           </div>
         </nav>
       </aside>
+      {isSidebarOpen && <button className="ds-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation backdrop" />}
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Identity Verification</p>
+        <div>
+          <button
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={16} />
+          </button>
+          <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Identity Verification</p>
+        </div>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
+          <button
+            className="ds-btn ds-btn-ghost ds-btn-sm"
+            style={{ padding: '7px 10px', borderRadius: '50%' }}
+            onClick={() => showPending('Notifications')}
+          >
             <Bell size={15} />
           </button>
           <div className="ds-avatar ds-avatar-md">
