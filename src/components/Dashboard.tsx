@@ -6,10 +6,10 @@ import { showPending } from '../lib/ui';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck,
   Bell, LogOut, Loader2, Key, Sparkles, CalendarX,
-  TrendingUp, Menu, X
+  TrendingUp, Clock
 } from 'lucide-react';
 
-function Sidebar({ activePath, isOpen, onClose }: { activePath: string; isOpen: boolean; onClose: () => void }) {
+function Sidebar({ activePath }: { activePath: string }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -21,10 +21,7 @@ function Sidebar({ activePath, isOpen, onClose }: { activePath: string; isOpen: 
   ];
 
   return (
-    <aside className={`ds-sidebar ${isOpen ? 'open' : ''}`}>
-      <button className="ds-sidebar-close" onClick={onClose} aria-label="Close navigation menu">
-        <X size={18} />
-      </button>
+    <aside className="ds-sidebar">
       <div className="ds-sidebar-logo">
         <BrandMark size={32} showText={false} />
       </div>
@@ -64,7 +61,6 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const profileStrength = useMemo(() => {
     const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
@@ -100,33 +96,17 @@ export default function Dashboard() {
 
   return (
     <div className="ds-layout">
-      <Sidebar
-        activePath={location.pathname}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-      {isSidebarOpen && <button className="ds-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation backdrop" />}
+      <Sidebar activePath={location.pathname} />
 
       {/* Top Bar */}
       <header className="ds-topbar">
         <div>
-          <button
-            className="ds-sidebar-toggle"
-            onClick={() => setIsSidebarOpen((open) => !open)}
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={16} />
-          </button>
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>
             Good day, <span style={{ color: 'var(--color-ink)', fontWeight: 600 }}>{profile?.displayName || 'Doctor'}</span>
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            className="ds-btn ds-btn-ghost ds-btn-sm"
-            style={{ padding: '7px 10px', borderRadius: '50%' }}
-            onClick={() => showPending('Notifications')}
-          >
+          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
             <Bell size={15} />
           </button>
           <div className="ds-avatar ds-avatar-md" style={{ overflow: 'hidden' }}>

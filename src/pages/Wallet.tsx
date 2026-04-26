@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
@@ -6,7 +6,7 @@ import { showPending } from '../lib/ui';
 import {
   LayoutDashboard, Briefcase, Wallet as WalletIcon, ShieldCheck, Bell, LogOut,
   CreditCard, Smartphone, Plus, ShieldCheck as ShieldIcon,
-  Clock, Receipt, RefreshCcw, ArrowRight, Lock, BadgeCheck, HelpCircle, Menu, X
+  Clock, Receipt, RefreshCcw, ArrowRight, Lock, BadgeCheck, HelpCircle
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -20,15 +20,11 @@ export default function Wallet() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   return (
-    <div className={`ds-layout ${isSidebarOpen ? '' : 'sidebar-collapsed'}`}>
+    <div className="ds-layout">
       {/* Sidebar */}
-      <aside className={`ds-sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <button className="ds-sidebar-close" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation menu">
-          <X size={18} />
-        </button>
+      <aside className="ds-sidebar">
         <div className="ds-sidebar-logo">
           <BrandMark size={32} showText={false} />
         </div>
@@ -49,26 +45,12 @@ export default function Wallet() {
           </div>
         </nav>
       </aside>
-      {isSidebarOpen && <button className="ds-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation backdrop" />}
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <div>
-          <button
-            className="ds-sidebar-toggle"
-            onClick={() => setIsSidebarOpen((open) => !open)}
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={16} />
-          </button>
-          <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Wallet & Earnings</p>
-        </div>
+        <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Wallet & Earnings</p>
         <div className="flex items-center gap-3">
-          <button
-            className="ds-btn ds-btn-ghost ds-btn-sm"
-            style={{ padding: '7px 10px', borderRadius: '50%' }}
-            onClick={() => showPending('Notifications')}
-          >
+          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
             <Bell size={15} />
           </button>
           <div className="ds-avatar ds-avatar-md">
@@ -101,10 +83,10 @@ export default function Wallet() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <button style={{ background: '#fff', color: 'var(--color-teal-dark)', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }} onClick={() => showPending('Withdrawals')}>
+                  <button style={{ background: '#fff', color: 'var(--color-teal-dark)', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}>
                     Withdraw Now
                   </button>
-                  <button style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }} onClick={() => showPending('Adding funds')}>
+                  <button style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}>
                     Add Funds
                   </button>
                 </div>
@@ -144,17 +126,15 @@ export default function Wallet() {
                   label="Stripe Connect"
                   sub="Direct bank transfer. Global."
                   active
-                  onSelect={() => showPending('Stripe payout setup')}
                 />
                 <PayoutMethod
                   icon={<Smartphone size={18} color="#fff" />}
                   iconBg="#4CAF50"
                   label="M-Pesa Mobile"
                   sub="Instant mobile wallet. East Africa."
-                  onSelect={() => showPending('M-Pesa payout setup')}
                 />
               </div>
-              <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ marginTop: 16, width: '100%', justifyContent: 'center', gap: 6 }} onClick={() => showPending('Linking payout accounts')}>
+              <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ marginTop: 16, width: '100%', justifyContent: 'center', gap: 6 }}>
                 <Plus size={14} /> Link New Account
               </button>
             </div>
@@ -208,14 +188,14 @@ function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
   );
 }
 
-function PayoutMethod({ icon, iconBg, label, sub, active, onSelect }: { icon: React.ReactNode; iconBg: string; label: string; sub: string; active?: boolean; onSelect: () => void }) {
+function PayoutMethod({ icon, iconBg, label, sub, active }: { icon: React.ReactNode; iconBg: string; label: string; sub: string; active?: boolean }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
       borderRadius: 10, border: `1px solid ${active ? 'var(--color-teal)' : 'var(--color-fog-2)'}`,
       background: active ? 'var(--color-teal-light)' : 'var(--color-white)',
       cursor: 'pointer', transition: 'border-color 0.15s',
-    }} onClick={onSelect}>
+    }}>
       <div style={{ width: 40, height: 40, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         {icon}
       </div>
