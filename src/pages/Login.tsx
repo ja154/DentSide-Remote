@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import BrandMark from '../components/BrandMark';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,7 @@ export default function Login() {
   const { user, profile, loading: authLoading } = useAuth();
 
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [pendingRoleSelection, setPendingRoleSelection] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'login' | 'role_selection'>('login');
 
@@ -20,11 +21,11 @@ export default function Login() {
     if (!authLoading && user) {
       if (profile) {
         navigate(profile.role === 'dentist' ? '/dashboard' : '/client-dashboard');
-      } else if (!isSigningIn) {
+      } else if (!isSigningIn && !pendingRoleSelection) {
         setStep('role_selection');
       }
     }
-  }, [user, profile, authLoading, isSigningIn, navigate]);
+  }, [user, profile, authLoading, isSigningIn, pendingRoleSelection, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
@@ -35,22 +36,15 @@ export default function Login() {
       return;
     }
     try {
-      const signInResult = await signInWithPopup(auth, googleProvider);
-      const userDocRef = doc(db, 'users', signInResult.user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const role = userDoc.data().role as 'dentist' | 'client';
-        navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
-        return;
-      }
-
-      setStep('role_selection');
+      await signInWithPopup(auth, googleProvider);
+      setPendingRoleSelection(true);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to sign in');
+      setPendingRoleSelection(false);
     } finally {
       setIsSigningIn(false);
+      if (!error && auth.currentUser) setStep('role_selection');
     }
   };
 
