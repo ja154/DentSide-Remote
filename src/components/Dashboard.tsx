@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import BrandMark from './BrandMark';
+import { showPending } from '../lib/ui';
 import {
   LayoutDashboard, Briefcase, Wallet, ShieldCheck,
   Bell, LogOut, Loader2, Key, Sparkles, CalendarX,
@@ -174,7 +175,7 @@ export default function Dashboard() {
         </div>
 
         {/* Bottom Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24 }}>
+        <div className="ds-main-split">
           {/* Active Gigs */}
           <div>
             <div className="ds-card-header" style={{ background: 'none', border: 'none', padding: '0 0 20px 0', marginBottom: 0 }}>
