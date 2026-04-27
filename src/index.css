@@ -85,6 +85,7 @@ body {
 }
 
 .ds-sidebar-logo {
+  position: relative;
   padding: 28px 24px 20px;
   border-bottom: 1px solid var(--color-ink-3);
 }
@@ -753,7 +754,9 @@ body {
   .ds-grid-2, .ds-grid-3, .ds-grid-4 { grid-template-columns: 1fr; }
   .ds-auth-page { grid-template-columns: 1fr; }
   .ds-auth-left { display: none; }
+  .ds-auth-right { padding: 32px 20px; }
   .ds-feature-grid { grid-template-columns: 1fr; }
+  .ds-page-title { font-size: 30px; }
 }
 
 @media (min-width: 769px) and (max-width: 1100px) {

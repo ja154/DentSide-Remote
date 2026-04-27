@@ -1,58 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import BrandMark from './BrandMark';
-import { showPending } from '../lib/ui';
+import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Briefcase, Wallet, ShieldCheck,
-  Bell, LogOut, Loader2, Key, Sparkles, CalendarX,
-  TrendingUp, Clock
+  Bell, Loader2, Key, Sparkles, CalendarX, ShieldCheck,
+  Menu,
+  TrendingUp
 } from 'lucide-react';
-
-function Sidebar({ activePath }: { activePath: string }) {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Gigs', href: '/opportunities', icon: Briefcase },
-    { label: 'Wallet', href: '/wallet', icon: Wallet },
-    { label: 'Profile', href: '/verification', icon: ShieldCheck },
-  ];
-
-  return (
-    <aside className="ds-sidebar">
-      <div className="ds-sidebar-logo">
-        <BrandMark size={32} showText={false} />
-      </div>
-      <nav className="ds-sidebar-nav">
-        <div className="ds-sidebar-section">
-          <div className="ds-sidebar-section-label">Navigation</div>
-          {navItems.map(({ label, href, icon: Icon }) => (
-            <Link
-              key={href}
-              to={href}
-              className={`ds-nav-item${activePath === href ? ' active' : ''}`}
-            >
-              <Icon size={16} className="nav-icon" />
-              {label}
-            </Link>
-          ))}
-        </div>
-        <div className="ds-sidebar-section" style={{ marginTop: 'auto' }}>
-          <button
-            className="ds-nav-item"
-            style={{ color: 'var(--color-ruby)' }}
-            onClick={async () => { await logout(); navigate('/'); }}
-          >
-            <LogOut size={16} className="nav-icon" />
-            Sign Out
-          </button>
-        </div>
-      </nav>
-    </aside>
-  );
-}
+import DentistSidebar from './DentistSidebar';
 
 export default function Dashboard() {
   const { profile } = useAuth();
@@ -61,6 +15,7 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matches, setMatches] = useState<any[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const profileStrength = useMemo(() => {
     const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
@@ -96,11 +51,32 @@ export default function Dashboard() {
 
   return (
     <div className="ds-layout">
-      <Sidebar activePath={location.pathname} />
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="ds-sidebar-backdrop md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      <DentistSidebar
+        pathname={location.pathname}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu size={16} />
+          </button>
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>
             Good day, <span style={{ color: 'var(--color-ink)', fontWeight: 600 }}>{profile?.displayName || 'Doctor'}</span>
           </p>
@@ -125,9 +101,9 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Row */}
-        <div className="ds-grid-3" style={{ marginBottom: 28 }}>
+        <div className="mb-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {/* Earnings Hero Card */}
-          <div className="ds-card ds-card-teal" style={{ gridColumn: 'span 2', padding: 28, position: 'relative', overflow: 'hidden' }}>
+          <div className="ds-card ds-card-teal md:col-span-2" style={{ padding: 28, position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
               <div>
                 <p className="ds-stat-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Total Earnings This Month</p>

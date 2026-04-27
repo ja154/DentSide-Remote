@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, LayoutDashboard, LogOut, Menu, Search } from 'lucide-react';
+import { Calendar, LayoutDashboard, LogOut, Menu, Search, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
 import SiteFooter from './SiteFooter';
@@ -18,17 +18,34 @@ export default function ClientLayout({
   title: string;
   children: React.ReactNode;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, logout } = useAuth();
 
   return (
     <div className="ds-layout">
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="ds-sidebar-backdrop md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
       {/* Sidebar */}
       <aside className={`ds-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="ds-sidebar-logo">
           <BrandMark size={32} showText={false} />
+          <button
+            type="button"
+            className="ds-sidebar-close"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close navigation"
+          >
+            <X size={16} />
+          </button>
         </div>
         <nav className="ds-sidebar-nav">
           <div className="ds-sidebar-section">
@@ -53,9 +70,11 @@ export default function ClientLayout({
 
           <div className="ds-sidebar-section" style={{ marginTop: 'auto' }}>
             <button
+              type="button"
               className="ds-nav-item"
               style={{ color: 'var(--color-ruby)' }}
               onClick={async () => {
+                setIsSidebarOpen(false);
                 await logout();
                 navigate('/');
                 setIsSidebarOpen(false);
@@ -79,6 +98,7 @@ export default function ClientLayout({
       <header className="ds-topbar">
         <div className="flex items-center gap-3 min-w-0">
           <button
+            type="button"
             className="ds-sidebar-toggle"
             onClick={() => setIsSidebarOpen((open) => !open)}
             aria-label="Toggle navigation menu"
@@ -86,7 +106,7 @@ export default function ClientLayout({
             <Menu size={16} />
           </button>
           <p className="text-[13px] text-[var(--color-ink-4)] font-medium truncate">
-          {title}
+            {title}
           </p>
         </div>
         <div className="flex items-center gap-3">

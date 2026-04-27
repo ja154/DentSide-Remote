@@ -36,15 +36,17 @@ export default function Login() {
       return;
     }
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
       setPendingRoleSelection(true);
+      if (result.user) {
+        setStep('role_selection');
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to sign in');
       setPendingRoleSelection(false);
     } finally {
       setIsSigningIn(false);
-      if (!error && auth.currentUser) setStep('role_selection');
     }
   };
 

@@ -1,54 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import BrandMark from '../components/BrandMark';
-import { showPending } from '../lib/ui';
+import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Briefcase, Wallet as WalletIcon, ShieldCheck, Bell, LogOut,
+  Wallet as WalletIcon, Bell,
   CreditCard, Smartphone, Plus, ShieldCheck as ShieldIcon,
-  Clock, Receipt, RefreshCcw, ArrowRight, Lock, BadgeCheck, HelpCircle
+  Clock, Receipt, RefreshCcw, ArrowRight, Lock, BadgeCheck, HelpCircle, Menu, ShieldCheck
 } from 'lucide-react';
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Gigs', href: '/opportunities', icon: Briefcase },
-  { label: 'Wallet', href: '/wallet', icon: WalletIcon },
-  { label: 'Profile', href: '/verification', icon: ShieldCheck },
-];
+import DentistSidebar from '../components/DentistSidebar';
 
 export default function Wallet() {
-  const { profile, logout } = useAuth();
-  const navigate = useNavigate();
+  const { profile } = useAuth();
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className="ds-layout">
-      {/* Sidebar */}
-      <aside className="ds-sidebar">
-        <div className="ds-sidebar-logo">
-          <BrandMark size={32} showText={false} />
-        </div>
-        <nav className="ds-sidebar-nav">
-          <div className="ds-sidebar-section">
-            <div className="ds-sidebar-section-label">Navigation</div>
-            {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
-              <Link key={href} to={href} className={`ds-nav-item${location.pathname === href ? ' active' : ''}`}>
-                <Icon size={16} className="nav-icon" /> {label}
-              </Link>
-            ))}
-          </div>
-          <div className="ds-sidebar-section">
-            <button className="ds-nav-item" style={{ color: 'var(--color-ruby)' }}
-              onClick={async () => { await logout(); navigate('/'); }}>
-              <LogOut size={16} className="nav-icon" /> Sign Out
-            </button>
-          </div>
-        </nav>
-      </aside>
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="ds-sidebar-backdrop md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      <DentistSidebar
+        pathname={location.pathname}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Wallet & Earnings</p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu size={16} />
+          </button>
+          <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Wallet & Earnings</p>
+        </div>
         <div className="flex items-center gap-3">
           <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
             <Bell size={15} />
@@ -67,22 +61,22 @@ export default function Wallet() {
           <p className="ds-page-subtitle">Manage your clinical earnings, track pending settlements, and choose your preferred withdrawal method.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, alignItems: 'start' }}>
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
           {/* Left Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="flex flex-col gap-5">
             {/* Balance Hero */}
             <div className="ds-card ds-card-teal" style={{ padding: 32, position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+                <div className="mb-7 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="ds-stat-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Available Balance</p>
-                    <p className="ds-stat-value" style={{ color: '#fff', fontSize: 52 }}>$0.00</p>
+                    <p className="ds-stat-value text-[40px] sm:text-[52px]" style={{ color: '#fff' }}>$0.00</p>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 10 }}>
                     <WalletIcon size={24} color="#fff" />
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="flex flex-wrap gap-3">
                   <button style={{ background: '#fff', color: 'var(--color-teal-dark)', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}>
                     Withdraw Now
                   </button>
@@ -115,7 +109,7 @@ export default function Wallet() {
           </div>
 
           {/* Right Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="flex flex-col gap-5">
             {/* Payout Channels */}
             <div className="ds-card" style={{ padding: 24 }}>
               <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 20 }}>Payout Channels</h3>

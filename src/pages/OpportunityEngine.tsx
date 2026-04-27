@@ -1,57 +1,49 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import BrandMark from '../components/BrandMark';
-import { showPending } from '../lib/ui';
+import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
+  Bell,
   Search, SlidersHorizontal, MapPin, DollarSign, SearchX,
-  TrendingUp, PlusSquare
+  TrendingUp, PlusSquare, Menu
 } from 'lucide-react';
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Gigs', href: '/opportunities', icon: Briefcase },
-  { label: 'Wallet', href: '/wallet', icon: Wallet },
-  { label: 'Profile', href: '/verification', icon: ShieldCheck },
-];
+import DentistSidebar from '../components/DentistSidebar';
 
 const TRENDING_SKILLS = ['Invisalign', 'iTero Scanning', 'Dental AI', 'Sleep Apnea', 'Implants', 'Oral Surgery'];
 
 export default function OpportunityEngine() {
-  const { profile, logout } = useAuth();
-  const navigate = useNavigate();
+  const { profile } = useAuth();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className="ds-layout">
-      {/* Sidebar */}
-      <aside className="ds-sidebar">
-        <div className="ds-sidebar-logo">
-          <BrandMark size={32} showText={false} />
-        </div>
-        <nav className="ds-sidebar-nav">
-          <div className="ds-sidebar-section">
-            <div className="ds-sidebar-section-label">Navigation</div>
-            {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
-              <Link key={href} to={href} className={`ds-nav-item${location.pathname === href ? ' active' : ''}`}>
-                <Icon size={16} className="nav-icon" /> {label}
-              </Link>
-            ))}
-          </div>
-          <div className="ds-sidebar-section">
-            <button className="ds-nav-item" style={{ color: 'var(--color-ruby)' }}
-              onClick={async () => { await logout(); navigate('/'); }}>
-              <LogOut size={16} className="nav-icon" /> Sign Out
-            </button>
-          </div>
-        </nav>
-      </aside>
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="ds-sidebar-backdrop md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      <DentistSidebar
+        pathname={location.pathname}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu size={16} />
+          </button>
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Opportunity Engine</p>
         </div>
         <div className="flex items-center gap-3">
@@ -90,7 +82,7 @@ export default function OpportunityEngine() {
         </div>
 
         {/* Content Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           {/* Left: Gig List */}
           <div>
             <div className="ds-card" style={{ padding: 56, textAlign: 'center' }}>
