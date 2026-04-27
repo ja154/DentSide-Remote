@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
-import { apiRequest } from '../lib/api';
+import { apiRequest, getDashboardPathForRole } from '../lib/api';
 import { auth, googleProvider } from '../lib/firebase';
 import BrandMark from '../components/BrandMark';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,7 +20,7 @@ export default function Login() {
   useEffect(() => {
     if (!authLoading && user) {
       if (profile) {
-        navigate(profile.role === 'dentist' ? '/dashboard' : '/client-dashboard');
+        navigate(getDashboardPathForRole(profile.role));
       } else if (!isSigningIn && !pendingRoleSelection) {
         setStep('role_selection');
       }

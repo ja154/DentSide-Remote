@@ -16,6 +16,7 @@
 - Firebase-authenticated Express routes now exist for the main platform domains, but they still depend on valid Firebase project configuration in `.env`.
 - Stripe and M-Pesa flows are scaffolded at the API boundary, with provider configuration still needed before live payouts can be processed.
 - Verification intake now has a backend home, but file storage remains metadata-only until a production bucket workflow is enabled.
+- An admin command-center UI now exists for operations review and verification moderation.
 
 ## 🟡 PHASE 2 — Teledentistry Layer (3–6 months)
 **Focus:** Second opinions, Treatment planning (No prescriptions initially to avoid legal risk).

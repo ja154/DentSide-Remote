@@ -91,7 +91,7 @@ adminRouter.patch(
       { merge: true },
     );
 
-    res.json(verification);
+    res.json({ id: userId, ...verification });
   }),
 );
 

@@ -30,6 +30,12 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 - `GET /api/admin/*`, `PATCH /api/admin/verifications/:userId`: admin audit and moderation routes.
 - `POST /api/webhooks/stripe`: Stripe webhook signature verification scaffold.
 
+## Admin Console
+- Admin users now have a dedicated `/admin` command center for:
+  - overview counts and integration readiness
+  - verification moderation with approve/reject/pending actions
+  - read-only reviews of gigs, appointments, and withdrawals
+
 ## Setup & Running Locally
 1. Clone the repository.
 2. Run `npm install` to install dependencies.
@@ -60,3 +66,4 @@ The app is configured to be deployed as a full-stack application.
 - Security headers are enforced with Helmet, including stricter referrer behavior.
 - Firebase-protected routes now require bearer-token validation on the server before profile, verification, gigs, appointments, withdrawals, or admin actions run.
 - Wallet, verification, gigs, and appointment structures now flow through Express routes instead of browser-side Firestore writes.
+- Admin moderation now has a first-party UI instead of API-only routes.

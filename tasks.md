@@ -8,4 +8,4 @@
 
 - [ ] **Security Hardening**: Add production observability, alerting, and stronger token/session diagnostics beyond the new request IDs, Zod validation, and protected Firebase-backed routes.
 - [ ] **Storage Workflow**: Replace verification metadata-only uploads with a real Firebase Storage or signed-upload pipeline.
-- [ ] **Admin Experience**: Build an admin UI on top of `/api/admin/overview`, `/api/admin/verifications`, `/api/admin/gigs`, `/api/admin/appointments`, and `/api/admin/withdrawals`.
+- [x] **Admin Experience**: Build an admin UI on top of `/api/admin/overview`, `/api/admin/verifications`, `/api/admin/gigs`, `/api/admin/appointments`, and `/api/admin/withdrawals`.

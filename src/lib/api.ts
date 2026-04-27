@@ -22,6 +22,22 @@ export interface UserProfile {
   verificationStatus?: VerificationStatus;
 }
 
+export interface VerificationRecord {
+  id: string;
+  userId: string;
+  legalName: string;
+  email: string;
+  clinic: string;
+  issuingState: string;
+  licenseNumber: string;
+  documentName: string;
+  status: VerificationStatus;
+  storageMode: 'bucket' | 'metadata_only';
+  reviewNote?: string;
+  submittedAt: string;
+  updatedAt: string;
+}
+
 export interface Gig {
   id: string;
   title: string;
@@ -73,6 +89,30 @@ export interface WalletSummary {
     stripe: boolean;
     mpesa: boolean;
   };
+}
+
+export interface AdminOverview {
+  counts: {
+    users: number;
+    gigs: number;
+    verifications: number;
+    bookings: number;
+    withdrawals: number;
+  };
+  integrations: {
+    firebase: boolean;
+    storage: boolean;
+    stripe: boolean;
+    mpesa: boolean;
+  };
+}
+
+export function getDashboardPathForRole(role: Role) {
+  if (role === 'admin') {
+    return '/admin';
+  }
+
+  return role === 'dentist' ? '/dashboard' : '/client-dashboard';
 }
 
 type ApiErrorPayload = {
