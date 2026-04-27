@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { apiRequest, type WalletSummary, type WithdrawalRecord } from '../lib/api';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Wallet as WalletIcon, Bell,
@@ -11,7 +12,43 @@ import DentistSidebar from '../components/DentistSidebar';
 export default function Wallet() {
   const { profile } = useAuth();
   const location = useLocation();
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>([]);
+  const [error, setError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadWallet = async () => {
+      try {
+        const [summary, history] = await Promise.all([
+          apiRequest<WalletSummary>('/api/withdraw/summary'),
+          apiRequest<WithdrawalRecord[]>('/api/withdraw/history'),
+        ]);
+
+        if (!cancelled) {
+          setWalletSummary(summary);
+          setWithdrawals(history);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          const message = loadError instanceof Error ? loadError.message : 'Unable to load wallet data right now.';
+          setError(message);
+        }
+      }
+    };
+
+    loadWallet();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const currency = walletSummary?.defaultCurrency || 'USD';
+  const formatMoney = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 
   return (
     <div className="ds-layout">
@@ -70,7 +107,9 @@ export default function Wallet() {
                 <div className="mb-7 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="ds-stat-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Available Balance</p>
-                    <p className="ds-stat-value text-[40px] sm:text-[52px]" style={{ color: '#fff' }}>$0.00</p>
+                    <p className="ds-stat-value text-[40px] sm:text-[52px]" style={{ color: '#fff' }}>
+                      {formatMoney(walletSummary?.availableBalance || 0)}
+                    </p>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 10 }}>
                     <WalletIcon size={24} color="#fff" />
@@ -90,8 +129,22 @@ export default function Wallet() {
 
             {/* Sub-stats */}
             <div className="ds-grid-2">
-              <StatCard icon={<Clock size={16} color="var(--color-amber)" />} label="Pending Settlements" value="$0.00" sub="Payments currently in clearing from completed consultations." />
-              <StatCard icon={<RefreshCcw size={16} color="var(--color-teal)" />} label="Automated Payout" value="Not Scheduled" sub="Scheduled for your linked Stripe account." />
+              <StatCard
+                icon={<Clock size={16} color="var(--color-amber)" />}
+                label="Pending Settlements"
+                value={formatMoney(walletSummary?.pendingBalance || 0)}
+                sub="Payments currently in clearing from completed consultations."
+              />
+              <StatCard
+                icon={<RefreshCcw size={16} color="var(--color-teal)" />}
+                label="Automated Payout"
+                value={
+                  walletSummary?.payoutsConfigured.stripe || walletSummary?.payoutsConfigured.mpesa
+                    ? 'Configured'
+                    : 'Needs Setup'
+                }
+                sub="Server-side payout channels are now tracked through the withdrawal API."
+              />
             </div>
 
             {/* Transaction History */}
@@ -100,11 +153,34 @@ export default function Wallet() {
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-ink)' }}>Recent Activity</h3>
                 <Link to="/wallet" style={{ fontSize: 13, color: 'var(--color-teal)', fontWeight: 600, textDecoration: 'none' }}>View Full Ledger</Link>
               </div>
-              <div className="ds-card" style={{ padding: 48, textAlign: 'center' }}>
-                <Receipt size={36} color="var(--color-fog-3)" style={{ margin: '0 auto 12px' }} />
-                <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: 6 }}>No Transactions Yet</h4>
-                <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>Your recent earnings and withdrawals will appear here.</p>
-              </div>
+              {withdrawals.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {withdrawals.slice(0, 5).map((record) => (
+                    <div key={record.id} className="ds-card" style={{ padding: 20 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+                        <div>
+                          <p style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: 4 }}>
+                            {record.provider === 'mpesa' ? 'M-Pesa' : 'Stripe'} withdrawal
+                          </p>
+                          <p style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
+                            {new Date(record.createdAt).toLocaleString()} · {record.status.replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                        <span className="ds-badge ds-badge-teal">{formatMoney(record.amount)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="ds-card" style={{ padding: 48, textAlign: 'center' }}>
+                  <Receipt size={36} color="var(--color-fog-3)" style={{ margin: '0 auto 12px' }} />
+                  <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: 6 }}>No Transactions Yet</h4>
+                  <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>Your recent earnings and withdrawals will appear here.</p>
+                </div>
+              )}
+              {error && (
+                <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-ruby)' }}>{error}</p>
+              )}
             </div>
           </div>
 
@@ -119,13 +195,14 @@ export default function Wallet() {
                   iconBg="#635BFF"
                   label="Stripe Connect"
                   sub="Direct bank transfer. Global."
-                  active
+                  active={Boolean(walletSummary?.payoutsConfigured.stripe)}
                 />
                 <PayoutMethod
                   icon={<Smartphone size={18} color="#fff" />}
                   iconBg="#4CAF50"
                   label="M-Pesa Mobile"
                   sub="Instant mobile wallet. East Africa."
+                  active={Boolean(walletSummary?.payoutsConfigured.mpesa)}
                 />
               </div>
               <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ marginTop: 16, width: '100%', justifyContent: 'center', gap: 6 }}>

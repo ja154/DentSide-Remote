@@ -2,57 +2,51 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: {userId}
-    // Fields:
-    //   - uid: string (required) - Firebase Auth UID
-    //   - email: string (required) - User email
-    //   - displayName: string (optional) - User display name
-    //   - photoURL: string (optional) - User photo URL
-    //   - role: string (required) - 'dentist', 'client', or 'admin'
-    //   - createdAt: timestamp (required) - Creation time
-    //   - onboardingComplete: boolean (optional) - Onboarding status
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
-    
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
+
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function isAdmin() {
-      return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      return isAuthenticated() &&
+        currentUserDoc().data.role == 'admin';
     }
-    
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
+
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
     }
-    
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
     }
-    
-    function uidUnchanged() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+
+    function isShortString(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
     }
-    
-    function uidNotModified() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+
+    function isOptionalString(data, field, maxLength) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLength);
     }
-    
+
+    function isOptionalStringList(data, field, maxItems) {
+      return !(field in data) || (data[field] is list && data[field].size() <= maxItems);
+    }
+
+    function isTimestampString(value) {
+      return value is string && value.size() >= 20 && value.size() <= 40;
+    }
+
+    function isOptionalTimestampString(data, field) {
+      return !(field in data) || isTimestampString(data[field]);
+    }
+
     function isValidEmail(email) {
       return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
@@ -61,45 +55,310 @@ service cloud.firestore {
       return role in ['dentist', 'client', 'admin'];
     }
 
-    // ===============================================================
-    // Domain Validators
-    // ===============================================================
-
-    function isValidUser(data) {
-      return hasRequiredFields(['uid', 'email', 'role', 'createdAt']) &&
-             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'onboardingComplete']) &&
-             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
-             isValidEmail(data.email) && data.email.size() < 256 &&
-             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
-             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 2048)) &&
-             isValidRole(data.role) &&
-             (data.createdAt is timestamp || data.createdAt == request.time) &&
-             (!('onboardingComplete' in data) || data.onboardingComplete is bool);
+    function isValidVerificationStatus(status) {
+      return status in ['unverified', 'pending', 'approved', 'rejected'];
     }
 
-    // ===============================================================
-    // Rules
-    // ===============================================================
+    function isValidGigStatus(status) {
+      return status in ['draft', 'open', 'closed'];
+    }
+
+    function isValidBookingStatus(status) {
+      return status in ['requested', 'confirmed', 'completed', 'cancelled'];
+    }
+
+    function isValidWithdrawalStatus(status) {
+      return status in ['pending_provider_setup', 'queued', 'paid', 'failed'];
+    }
+
+    function isValidProvider(provider) {
+      return provider in ['stripe', 'mpesa'];
+    }
+
+    function isValidStorageMode(mode) {
+      return mode in ['bucket', 'metadata_only'];
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(data, ['uid', 'email', 'role', 'createdAt', 'onboardingComplete']) &&
+        hasOnlyAllowedFields(data, [
+          'uid',
+          'email',
+          'displayName',
+          'photoURL',
+          'role',
+          'createdAt',
+          'onboardingComplete',
+          'experience',
+          'licenses',
+          'availability',
+          'interests',
+          'verificationStatus'
+        ]) &&
+        isShortString(data.uid, 128) &&
+        isValidEmail(data.email) &&
+        data.email.size() <= 255 &&
+        isValidRole(data.role) &&
+        isTimestampString(data.createdAt) &&
+        data.onboardingComplete is bool &&
+        isOptionalString(data, 'displayName', 100) &&
+        isOptionalString(data, 'photoURL', 2048) &&
+        isOptionalString(data, 'experience', 100) &&
+        isOptionalStringList(data, 'licenses', 20) &&
+        isOptionalString(data, 'availability', 100) &&
+        isOptionalStringList(data, 'interests', 20) &&
+        (!('verificationStatus' in data) || isValidVerificationStatus(data.verificationStatus));
+    }
+
+    function isValidGig(data) {
+      return hasRequiredFields(data, [
+          'title',
+          'company',
+          'type',
+          'rateLabel',
+          'tags',
+          'remoteOnly',
+          'status',
+          'createdBy',
+          'createdByRole',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        hasOnlyAllowedFields(data, [
+          'title',
+          'company',
+          'type',
+          'rateLabel',
+          'description',
+          'tags',
+          'remoteOnly',
+          'status',
+          'createdBy',
+          'createdByRole',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isShortString(data.title, 120) &&
+        isShortString(data.company, 120) &&
+        isShortString(data.type, 60) &&
+        isShortString(data.rateLabel, 40) &&
+        isOptionalString(data, 'description', 1000) &&
+        data.tags is list &&
+        data.tags.size() <= 12 &&
+        data.remoteOnly is bool &&
+        isValidGigStatus(data.status) &&
+        isShortString(data.createdBy, 128) &&
+        isValidRole(data.createdByRole) &&
+        isTimestampString(data.createdAt) &&
+        isTimestampString(data.updatedAt);
+    }
+
+    function isValidVerification(data) {
+      return hasRequiredFields(data, [
+          'userId',
+          'legalName',
+          'email',
+          'clinic',
+          'issuingState',
+          'licenseNumber',
+          'documentName',
+          'status',
+          'storageMode',
+          'submittedAt',
+          'updatedAt'
+        ]) &&
+        hasOnlyAllowedFields(data, [
+          'userId',
+          'legalName',
+          'email',
+          'clinic',
+          'issuingState',
+          'licenseNumber',
+          'documentName',
+          'status',
+          'storageMode',
+          'reviewNote',
+          'submittedAt',
+          'updatedAt'
+        ]) &&
+        isShortString(data.userId, 128) &&
+        isShortString(data.legalName, 120) &&
+        isValidEmail(data.email) &&
+        isShortString(data.clinic, 160) &&
+        isShortString(data.issuingState, 80) &&
+        isShortString(data.licenseNumber, 80) &&
+        isShortString(data.documentName, 255) &&
+        isValidVerificationStatus(data.status) &&
+        isValidStorageMode(data.storageMode) &&
+        isOptionalString(data, 'reviewNote', 400) &&
+        isTimestampString(data.submittedAt) &&
+        isTimestampString(data.updatedAt);
+    }
+
+    function isValidBooking(data) {
+      return hasRequiredFields(data, [
+          'clientId',
+          'clientName',
+          'reason',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        hasOnlyAllowedFields(data, [
+          'clientId',
+          'clientName',
+          'dentistId',
+          'dentistName',
+          'reason',
+          'scheduledFor',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isShortString(data.clientId, 128) &&
+        isShortString(data.clientName, 120) &&
+        isOptionalString(data, 'dentistId', 128) &&
+        isOptionalString(data, 'dentistName', 120) &&
+        isShortString(data.reason, 500) &&
+        isOptionalTimestampString(data, 'scheduledFor') &&
+        isValidBookingStatus(data.status) &&
+        isTimestampString(data.createdAt) &&
+        isTimestampString(data.updatedAt);
+    }
+
+    function isValidWithdrawal(data) {
+      return hasRequiredFields(data, [
+          'userId',
+          'email',
+          'amount',
+          'currency',
+          'provider',
+          'destinationLabel',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        hasOnlyAllowedFields(data, [
+          'userId',
+          'email',
+          'amount',
+          'currency',
+          'provider',
+          'destinationLabel',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isShortString(data.userId, 128) &&
+        isValidEmail(data.email) &&
+        data.amount is number &&
+        data.amount > 0 &&
+        isShortString(data.currency, 3) &&
+        isValidProvider(data.provider) &&
+        isShortString(data.destinationLabel, 120) &&
+        isValidWithdrawalStatus(data.status) &&
+        isTimestampString(data.createdAt) &&
+        isTimestampString(data.updatedAt);
+    }
 
     match /users/{userId} {
-      // Users can read their own profile. Admins can read all.
       allow read: if isOwner(userId) || isAdmin();
-      
-      // Users can create their own profile. They cannot create an admin role unless they are already an admin.
-      allow create: if isAuthenticated() && 
-                    isOwner(userId) && 
-                    isValidUser(request.resource.data) && 
-                    uidUnchanged() &&
-                    (request.resource.data.role in ['dentist', 'client'] || isAdmin());
-                    
-      // Users can update their own profile. They cannot change their role to admin, and cannot change uid or createdAt.
-      allow update: if isAuthenticated() && 
-                    isOwner(userId) && 
-                    isValidUser(request.resource.data) && 
-                    uidNotModified() &&
-                    request.resource.data.createdAt == resource.data.createdAt &&
-                    (request.resource.data.role == resource.data.role || isAdmin());
-                    
+
+      allow create: if isAuthenticated() &&
+        isOwner(userId) &&
+        isValidUser(request.resource.data) &&
+        request.resource.data.uid == request.auth.uid &&
+        (request.resource.data.role in ['dentist', 'client'] || isAdmin());
+
+      allow update: if isAuthenticated() &&
+        (isOwner(userId) || isAdmin()) &&
+        isValidUser(request.resource.data) &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        (request.resource.data.role == resource.data.role || isAdmin());
+
+      allow delete: if isAdmin();
+    }
+
+    match /gigs/{gigId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated() &&
+        isValidGig(request.resource.data) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        currentUserDoc().data.role in ['client', 'admin'];
+
+      allow update: if isAuthenticated() &&
+        isValidGig(request.resource.data) &&
+        (
+          resource.data.createdBy == request.auth.uid ||
+          isAdmin()
+        ) &&
+        request.resource.data.createdBy == resource.data.createdBy &&
+        request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if resource.data.createdBy == request.auth.uid || isAdmin();
+    }
+
+    match /verifications/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId) &&
+        isValidVerification(request.resource.data) &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'pending';
+
+      allow update: if isValidVerification(request.resource.data) &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.submittedAt == resource.data.submittedAt &&
+        (
+          (
+            isOwner(userId) &&
+            request.resource.data.status == 'pending'
+          ) ||
+          isAdmin()
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (
+        resource.data.clientId == request.auth.uid ||
+        (('dentistId' in resource.data) && resource.data.dentistId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      allow create: if isAuthenticated() &&
+        isValidBooking(request.resource.data) &&
+        request.resource.data.clientId == request.auth.uid;
+
+      allow update: if isAuthenticated() &&
+        isValidBooking(request.resource.data) &&
+        request.resource.data.clientId == resource.data.clientId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        (
+          request.auth.uid == resource.data.clientId ||
+          (('dentistId' in resource.data) && resource.data.dentistId == request.auth.uid) ||
+          isAdmin()
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /withdrawals/{withdrawalId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isAuthenticated() &&
+        isValidWithdrawal(request.resource.data) &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAdmin() &&
+        isValidWithdrawal(request.resource.data) &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.createdAt == resource.data.createdAt;
+
       allow delete: if isAdmin();
     }
   }

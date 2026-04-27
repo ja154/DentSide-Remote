@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { apiRequest, type Gig } from '../lib/api';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Bell,
@@ -14,7 +15,48 @@ export default function OpportunityEngine() {
   const { profile } = useAuth();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGigs = async () => {
+      try {
+        const data = await apiRequest<Gig[]>('/api/gigs');
+        if (!cancelled) {
+          setGigs(data);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          const message = loadError instanceof Error ? loadError.message : 'Unable to load gigs right now.';
+          setError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadGigs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const visibleGigs = gigs.filter((gig) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    return [gig.title, gig.company, gig.type, gig.description || '', ...gig.tags]
+      .join(' ')
+      .toLowerCase()
+      .includes(query);
+  });
 
   return (
     <div className="ds-layout">
@@ -85,14 +127,48 @@ export default function OpportunityEngine() {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           {/* Left: Gig List */}
           <div>
-            <div className="ds-card" style={{ padding: 56, textAlign: 'center' }}>
-              <SearchX size={40} color="var(--color-fog-3)" style={{ margin: '0 auto 16px' }} />
-              <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', fontSize: 16, marginBottom: 8 }}>No matching gigs found</h4>
-              <p style={{ fontSize: 13, color: 'var(--color-ink-4)', maxWidth: 380, margin: '0 auto 20px', lineHeight: 1.6 }}>
-                There are currently no active opportunities matching your profile criteria. Check back later or adjust your filters.
-              </p>
-              <button onClick={() => setSearchQuery('')} className="ds-btn ds-btn-ghost ds-btn-sm">Clear Filters</button>
-            </div>
+            {isLoading ? (
+              <div className="ds-card" style={{ padding: 56, textAlign: 'center' }}>
+                <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>Loading opportunities…</p>
+              </div>
+            ) : visibleGigs.length === 0 ? (
+              <div className="ds-card" style={{ padding: 56, textAlign: 'center' }}>
+                <SearchX size={40} color="var(--color-fog-3)" style={{ margin: '0 auto 16px' }} />
+                <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', fontSize: 16, marginBottom: 8 }}>No matching gigs found</h4>
+                <p style={{ fontSize: 13, color: 'var(--color-ink-4)', maxWidth: 380, margin: '0 auto 20px', lineHeight: 1.6 }}>
+                  There are currently no active opportunities matching your profile criteria. Check back later or adjust your filters.
+                </p>
+                <button onClick={() => setSearchQuery('')} className="ds-btn ds-btn-ghost ds-btn-sm">Clear Filters</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {visibleGigs.map((gig) => (
+                  <div key={gig.id} className="ds-card" style={{ padding: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 10 }}>
+                      <div>
+                        <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 4 }}>{gig.title}</h3>
+                        <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>{gig.company} · {gig.type}</p>
+                      </div>
+                      <span className="ds-badge ds-badge-teal">{gig.rateLabel}</span>
+                    </div>
+                    {gig.description && (
+                      <p style={{ fontSize: 13, color: 'var(--color-ink-4)', lineHeight: 1.6, marginBottom: 14 }}>
+                        {gig.description}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {gig.tags.map((tag) => (
+                        <span key={tag} className="ds-tag">{tag}</span>
+                      ))}
+                      {gig.remoteOnly && <span className="ds-tag">Remote only</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {error && (
+              <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-ruby)' }}>{error}</p>
+            )}
           </div>
 
           {/* Right: Sidebar Insights */}

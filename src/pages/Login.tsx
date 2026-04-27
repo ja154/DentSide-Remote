@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../lib/firebase';
+import { apiRequest } from '../lib/api';
+import { auth, googleProvider } from '../lib/firebase';
 import BrandMark from '../components/BrandMark';
 import { useAuth } from '../contexts/AuthContext';
 import { Stethoscope, Users, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
@@ -30,7 +30,7 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     setError('');
-    if (!auth || !db) {
+    if (!auth) {
       setError('Firebase keys are missing. Please configure your .env variables to log in.');
       setIsSigningIn(false);
       return;
@@ -55,15 +55,9 @@ export default function Login() {
     setIsSigningIn(true);
     setError('');
     try {
-      const userDocRef = doc(db, 'users', user.uid);
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        role,
-        createdAt: serverTimestamp(),
-        onboardingComplete: false,
+      await apiRequest('/api/auth/profile', {
+        method: 'POST',
+        body: JSON.stringify({ role }),
       });
       navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
     } catch (err: any) {

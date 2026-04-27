@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { apiRequest } from '../lib/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Bell, Menu,
@@ -28,7 +29,7 @@ const STEPS = [
 ];
 
 export default function IdentityVerification() {
-  const { profile, updateProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -88,11 +89,12 @@ export default function IdentityVerification() {
 
     setIsSubmitting(true);
     try {
-      await updateProfile({
-        displayName: form.legalName.trim(),
-        onboardingComplete: true,
+      const response = await apiRequest<{ message?: string }>('/api/verify', {
+        method: 'POST',
+        body: JSON.stringify(form),
       });
-      setSuccess('Verification submitted. Review typically completes within 24–48 business hours.');
+      await refreshProfile();
+      setSuccess(response.message || 'Verification submitted. Review typically completes within 24–48 business hours.');
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Unable to save verification details right now.';
       setError(message);
