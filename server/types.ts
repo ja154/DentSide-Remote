@@ -4,6 +4,17 @@ export type GigStatus = 'draft' | 'open' | 'closed';
 export type BookingStatus = 'requested' | 'confirmed' | 'completed' | 'cancelled';
 export type WithdrawalProvider = 'stripe' | 'mpesa';
 export type WithdrawalStatus = 'pending_provider_setup' | 'queued' | 'paid' | 'failed';
+export type NotificationType =
+  | 'verification_approved'
+  | 'verification_rejected'
+  | 'appointment_confirmed'
+  | 'appointment_cancelled'
+  | 'appointment_completed'
+  | 'new_appointment_request'
+  | 'gig_posted'
+  | 'withdrawal_paid'
+  | 'withdrawal_failed'
+  | 'system';
 
 export interface FirebaseIdentity {
   uid: string;
@@ -78,6 +89,17 @@ export interface WithdrawalRecord {
   provider: WithdrawalProvider;
   destinationLabel: string;
   status: WithdrawalStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationRecord {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  read: boolean;
+  relatedId?: string;
   createdAt: string;
   updatedAt: string;
 }

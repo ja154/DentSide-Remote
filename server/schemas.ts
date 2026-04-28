@@ -52,6 +52,21 @@ export const GigCreateSchema = z.object({
   status: z.enum(['draft', 'open', 'closed']).default('open'),
 });
 
+export const GigPatchSchema = z
+  .object({
+    title: z.string().trim().min(2).max(120).optional(),
+    company: z.string().trim().min(2).max(120).optional(),
+    type: z.string().trim().min(2).max(60).optional(),
+    rateLabel: z.string().trim().min(2).max(40).optional(),
+    description: z.string().trim().max(1000).optional(),
+    tags: z.array(z.string().trim().min(1).max(40)).max(12).optional(),
+    remoteOnly: z.boolean().optional(),
+    status: z.enum(['draft', 'open', 'closed']).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, {
+    message: 'At least one field is required.',
+  });
+
 export const VerificationSubmitSchema = z.object({
   legalName: z.string().trim().min(3).max(120),
   email: z.string().trim().email(),
@@ -70,6 +85,13 @@ export const AppointmentCreateSchema = z.object({
   scheduledFor: z.string().datetime().optional(),
 });
 
+export const AppointmentPatchSchema = z.object({
+  status: z.enum(['requested', 'confirmed', 'completed', 'cancelled']),
+  scheduledFor: z.string().datetime().optional(),
+  dentistId: z.string().trim().min(2).max(128).optional(),
+  dentistName: z.string().trim().min(2).max(120).optional(),
+});
+
 export const WithdrawalRequestSchema = z.object({
   amount: z.coerce.number().positive().max(50000),
   currency: z
@@ -84,6 +106,14 @@ export const WithdrawalRequestSchema = z.object({
 export const AdminVerificationDecisionSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected']),
   reviewNote: z.string().trim().max(400).optional(),
+});
+
+export const AdminWithdrawalDecisionSchema = z.object({
+  status: z.enum(['queued', 'paid', 'failed']),
+});
+
+export const AdminUserRolePatchSchema = z.object({
+  role: z.enum(['dentist', 'client', 'admin']),
 });
 
 export const StripeWebhookSchema = z.object({

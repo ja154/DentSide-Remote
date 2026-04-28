@@ -7,9 +7,11 @@ import { createServer as createViteServer } from 'vite';
 import { adminRouter } from './routes/admin.ts';
 import { appointmentsRouter } from './routes/appointments.ts';
 import { authRouter } from './routes/auth.ts';
+import { dentistsRouter } from './routes/dentists.ts';
 import { gigsRouter } from './routes/gigs.ts';
 import { healthRouter } from './routes/health.ts';
 import { matchRouter } from './routes/match.ts';
+import { notificationsRouter } from './routes/notifications.ts';
 import { stripeWebhookRouter } from './routes/stripe-webhook.ts';
 import { verificationRouter } from './routes/verification.ts';
 import { withdrawRouter } from './routes/withdraw.ts';
@@ -36,7 +38,7 @@ export async function createApp() {
         : env.allowedOrigins.length > 0
           ? env.allowedOrigins
           : true,
-    methods: ['GET', 'POST', 'PATCH'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   };
 
   app.use(cors(corsOptions));
@@ -67,13 +69,26 @@ export async function createApp() {
     legacyHeaders: false,
   });
 
+  const readLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 400,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // ─── Routes ─────────────────────────────────────────────────────────────────
   app.use('/health', healthRouter);
   app.use('/api/match', apiLimiter, matchRouter);
   app.use('/api/auth', protectedLimiter, authRouter);
+
+  // Dentist directory — higher read limit, tighter write limit via internal logic
+  app.use('/api/dentists', readLimiter, dentistsRouter);
+
   app.use('/api/gigs', protectedLimiter, gigsRouter);
   app.use('/api/verify', protectedLimiter, verificationRouter);
   app.use('/api/appointments', protectedLimiter, appointmentsRouter);
   app.use('/api/withdraw', protectedLimiter, withdrawRouter);
+  app.use('/api/notifications', readLimiter, notificationsRouter);
   app.use('/api/admin', protectedLimiter, adminRouter);
 
   if (env.NODE_ENV !== 'production') {

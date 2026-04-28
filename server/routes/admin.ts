@@ -1,14 +1,33 @@
 import { Router } from 'express';
-import { AdminVerificationDecisionSchema } from '../schemas.ts';
-import { getOptionalDocument, listDocuments, setDocument } from '../services/firebase-rest.ts';
-import { ensureProfile, loadUserProfile, requireAuth, requireRole } from '../middleware/auth.ts';
+import { z } from 'zod';
+import { AppError } from '../errors.ts';
+import { AdminVerificationDecisionSchema, AdminWithdrawalDecisionSchema, AdminUserRolePatchSchema } from '../schemas.ts';
+import {
+  getOptionalDocument,
+  listDocuments,
+  setDocument,
+} from '../services/firebase-rest.ts';
+import {
+  ensureProfile,
+  loadUserProfile,
+  requireAuth,
+  requireRole,
+} from '../middleware/auth.ts';
 import { env } from '../env.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
-import type { AppointmentRecord, GigRecord, UserProfile, VerificationRecord, WithdrawalRecord } from '../types.ts';
+import type {
+  AppointmentRecord,
+  GigRecord,
+  UserProfile,
+  VerificationRecord,
+  WithdrawalRecord,
+} from '../types.ts';
 
 export const adminRouter = Router();
 
 adminRouter.use(requireAuth, loadUserProfile, ensureProfile, requireRole('admin'));
+
+// ─── Overview ────────────────────────────────────────────────────────────────
 
 adminRouter.get(
   '/overview',
@@ -39,15 +58,86 @@ adminRouter.get(
   }),
 );
 
+// ─── Users ───────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/users
+ * Returns all users with optional role filter.
+ */
+adminRouter.get(
+  '/users',
+  asyncHandler(async (req, res) => {
+    const users = await listDocuments<UserProfile>('users', req.firebaseToken!, {
+      pageSize: 200,
+    });
+
+    const roleFilter =
+      typeof req.query.role === 'string' ? req.query.role.trim() : '';
+    const search =
+      typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
+
+    const filtered = users
+      .filter((u) => !roleFilter || u.role === roleFilter)
+      .filter((u) => {
+        if (!search) return true;
+        return [u.displayName || '', u.email, u.uid]
+          .join(' ')
+          .toLowerCase()
+          .includes(search);
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    res.json(filtered);
+  }),
+);
+
+/**
+ * PATCH /api/admin/users/:userId/role
+ * Change a user's role. Use with caution — demoting an admin is allowed.
+ */
+adminRouter.patch(
+  '/users/:userId/role',
+  asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    if (userId === req.profile!.uid) {
+      throw new AppError('You cannot change your own role.', 403, 'forbidden');
+    }
+
+    const payload = AdminUserRolePatchSchema.parse(req.body);
+    const existing = await getOptionalDocument<UserProfile>(
+      `users/${userId}`,
+      req.firebaseToken!,
+    );
+
+    if (!existing) {
+      throw new AppError('User not found.', 404, 'not_found');
+    }
+
+    const timestamp = new Date().toISOString();
+    await setDocument(
+      `users/${userId}`,
+      { role: payload.role, updatedAt: timestamp },
+      req.firebaseToken!,
+      { merge: true },
+    );
+
+    res.json({ id: userId, ...existing, role: payload.role });
+  }),
+);
+
+// ─── Verifications ───────────────────────────────────────────────────────────
+
 adminRouter.get(
   '/verifications',
   asyncHandler(async (req, res) => {
-    const verifications = await listDocuments<VerificationRecord>('verifications', req.firebaseToken!, {
-      pageSize: 200,
-      orderBy: 'updatedAt desc',
-    });
+    const verifications = await listDocuments<VerificationRecord>(
+      'verifications',
+      req.firebaseToken!,
+      { pageSize: 200 },
+    );
 
-    res.json(verifications.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)));
+    res.json(verifications.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
   }),
 );
 
@@ -56,11 +146,13 @@ adminRouter.patch(
   asyncHandler(async (req, res) => {
     const payload = AdminVerificationDecisionSchema.parse(req.body);
     const { userId } = req.params;
-    const existing = await getOptionalDocument<VerificationRecord>(`verifications/${userId}`, req.firebaseToken!);
+    const existing = await getOptionalDocument<VerificationRecord>(
+      `verifications/${userId}`,
+      req.firebaseToken!,
+    );
 
     if (!existing) {
-      res.status(404).json({ error: 'Verification request not found.' });
-      return;
+      throw new AppError('Verification request not found.', 404, 'not_found');
     }
 
     const timestamp = new Date().toISOString();
@@ -73,20 +165,14 @@ adminRouter.patch(
 
     await setDocument(
       `verifications/${userId}`,
-      {
-        status: payload.status,
-        reviewNote: payload.reviewNote,
-        updatedAt: timestamp,
-      },
+      { status: payload.status, reviewNote: payload.reviewNote, updatedAt: timestamp },
       req.firebaseToken!,
       { merge: true },
     );
 
     await setDocument(
       `users/${userId}`,
-      {
-        verificationStatus: payload.status,
-      },
+      { verificationStatus: payload.status },
       req.firebaseToken!,
       { merge: true },
     );
@@ -95,38 +181,82 @@ adminRouter.patch(
   }),
 );
 
+// ─── Gigs ────────────────────────────────────────────────────────────────────
+
 adminRouter.get(
   '/gigs',
   asyncHandler(async (req, res) => {
     const gigs = await listDocuments<GigRecord>('gigs', req.firebaseToken!, {
       pageSize: 200,
-      orderBy: 'updatedAt desc',
     });
 
-    res.json(gigs);
+    res.json(gigs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
   }),
 );
+
+// ─── Appointments ─────────────────────────────────────────────────────────────
 
 adminRouter.get(
   '/appointments',
   asyncHandler(async (req, res) => {
     const appointments = await listDocuments<AppointmentRecord>('bookings', req.firebaseToken!, {
       pageSize: 200,
-      orderBy: 'updatedAt desc',
     });
 
-    res.json(appointments);
+    res.json(appointments.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
   }),
 );
+
+// ─── Withdrawals ─────────────────────────────────────────────────────────────
 
 adminRouter.get(
   '/withdrawals',
   asyncHandler(async (req, res) => {
-    const withdrawals = await listDocuments<WithdrawalRecord>('withdrawals', req.firebaseToken!, {
-      pageSize: 200,
-      orderBy: 'updatedAt desc',
-    });
+    const withdrawals = await listDocuments<WithdrawalRecord>(
+      'withdrawals',
+      req.firebaseToken!,
+      { pageSize: 200 },
+    );
 
-    res.json(withdrawals);
+    res.json(withdrawals.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+  }),
+);
+
+/**
+ * PATCH /api/admin/withdrawals/:withdrawalId
+ * Advance a withdrawal to 'paid' or 'failed'. Admins only.
+ */
+adminRouter.patch(
+  '/withdrawals/:withdrawalId',
+  asyncHandler(async (req, res) => {
+    const { withdrawalId } = req.params;
+    const payload = AdminWithdrawalDecisionSchema.parse(req.body);
+
+    const existing = await getOptionalDocument<WithdrawalRecord>(
+      `withdrawals/${withdrawalId}`,
+      req.firebaseToken!,
+    );
+
+    if (!existing) {
+      throw new AppError('Withdrawal record not found.', 404, 'not_found');
+    }
+
+    if (existing.status === 'paid' || existing.status === 'failed') {
+      throw new AppError(
+        `Withdrawal is already in terminal state "${existing.status}".`,
+        409,
+        'conflict',
+      );
+    }
+
+    const timestamp = new Date().toISOString();
+    await setDocument(
+      `withdrawals/${withdrawalId}`,
+      { status: payload.status, updatedAt: timestamp },
+      req.firebaseToken!,
+      { merge: true },
+    );
+
+    res.json({ id: withdrawalId, ...existing, status: payload.status, updatedAt: timestamp });
   }),
 );
