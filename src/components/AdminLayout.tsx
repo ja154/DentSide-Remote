@@ -8,14 +8,17 @@ import {
   LogOut,
   Menu,
   Shield,
+  Users,
   Wallet,
   X,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
+import NotificationMenu from './NotificationMenu';
 
 const ADMIN_NAV_ITEMS = [
   { label: 'Overview', hash: '#overview', icon: LayoutDashboard },
+  { label: 'Users', hash: '#users', icon: Users },
   { label: 'Verification', hash: '#verifications', icon: BadgeCheck },
   { label: 'Marketplace', hash: '#gigs', icon: Briefcase },
   { label: 'Appointments', hash: '#appointments', icon: Calendar },
@@ -134,6 +137,7 @@ export default function AdminLayout({
         </div>
 
         <div className="flex items-center gap-3">
+          <NotificationMenu />
           <div className="hidden md:flex items-center gap-2 rounded-full border border-[var(--color-fog-2)] bg-white px-3 py-1.5">
             <Shield size={13} color="var(--color-teal)" />
             <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-teal-dark)]">

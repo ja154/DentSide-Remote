@@ -104,7 +104,7 @@ notificationsRouter.post(
     await Promise.all(
       unread.map((n) =>
         setDocument(
-          `notifications/${n.userId}_${n.createdAt}`,
+          `notifications/${n.id}`,
           { read: true, updatedAt: timestamp },
           req.firebaseToken!,
           { merge: true },

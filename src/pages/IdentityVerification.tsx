@@ -3,10 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../lib/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Bell, Menu,
+  Menu,
   ArrowLeft, Upload, Clock, BadgeCheck, HelpCircle, Lock, CheckCircle2, CircleAlert
 } from 'lucide-react';
 import DentistSidebar from '../components/DentistSidebar';
+import NotificationMenu from '../components/NotificationMenu';
 
 
 type FormState = {
@@ -134,9 +135,7 @@ export default function IdentityVerification() {
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Identity Verification</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
-            <Bell size={15} />
-          </button>
+          <NotificationMenu />
           <div className="ds-avatar ds-avatar-md">
             <img src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>

@@ -13,6 +13,7 @@ import {
   requireAuth,
   requireRole,
 } from '../middleware/auth.ts';
+import { createNotification } from './notifications.ts';
 import { env } from '../env.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type {
@@ -177,6 +178,28 @@ adminRouter.patch(
       { merge: true },
     );
 
+    if (payload.status === 'approved' || payload.status === 'rejected') {
+      await createNotification(
+        {
+          userId,
+          type:
+            payload.status === 'approved'
+              ? 'verification_approved'
+              : 'verification_rejected',
+          title:
+            payload.status === 'approved'
+              ? 'Verification approved'
+              : 'Verification needs attention',
+          body:
+            payload.status === 'approved'
+              ? 'Your verification has been approved. You can now access approved practitioner experiences.'
+              : payload.reviewNote || 'Your verification was rejected. Review the note from the admin team and resubmit when ready.',
+          relatedId: userId,
+        },
+        req.firebaseToken!,
+      ).catch(() => null);
+    }
+
     res.json({ id: userId, ...verification });
   }),
 );
@@ -256,6 +279,25 @@ adminRouter.patch(
       req.firebaseToken!,
       { merge: true },
     );
+
+    if (payload.status === 'paid' || payload.status === 'failed') {
+      await createNotification(
+        {
+          userId: existing.userId,
+          type: payload.status === 'paid' ? 'withdrawal_paid' : 'withdrawal_failed',
+          title:
+            payload.status === 'paid'
+              ? 'Withdrawal paid'
+              : 'Withdrawal failed',
+          body:
+            payload.status === 'paid'
+              ? `Your ${existing.provider} withdrawal for ${existing.currency} ${existing.amount} was marked as paid.`
+              : `Your ${existing.provider} withdrawal for ${existing.currency} ${existing.amount} needs attention from operations.`,
+          relatedId: withdrawalId,
+        },
+        req.firebaseToken!,
+      ).catch(() => null);
+    }
 
     res.json({ id: withdrawalId, ...existing, status: payload.status, updatedAt: timestamp });
   }),

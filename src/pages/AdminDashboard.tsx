@@ -8,35 +8,53 @@ import {
   Loader2,
   RefreshCcw,
   ShieldAlert,
+  Users,
   Wallet,
 } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import {
   apiRequest,
+  type AdminUser,
   type AdminOverview,
   type Appointment,
   type Gig,
   type VerificationRecord,
   type WithdrawalRecord,
 } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 type VerificationActionState = {
   userId: string;
   status: 'pending' | 'approved' | 'rejected';
 } | null;
 
+type RoleActionState = {
+  userId: string;
+  role: 'dentist' | 'client' | 'admin';
+} | null;
+
+type WithdrawalActionState = {
+  withdrawalId: string;
+  status: 'queued' | 'paid' | 'failed';
+} | null;
+
 export default function AdminDashboard() {
+  const { profile } = useAuth();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [verifications, setVerifications] = useState<VerificationRecord[]>([]);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<Record<string, AdminUser['role']>>({});
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [actionState, setActionState] = useState<VerificationActionState>(null);
+  const [roleActionState, setRoleActionState] = useState<RoleActionState>(null);
+  const [withdrawalActionState, setWithdrawalActionState] = useState<WithdrawalActionState>(null);
 
   const pendingVerifications = useMemo(
     () => verifications.filter((verification) => verification.status === 'pending').length,
@@ -67,9 +85,10 @@ export default function AdminDashboard() {
     }
 
     try {
-      const [overviewData, verificationData, gigData, appointmentData, withdrawalData] =
+      const [overviewData, userData, verificationData, gigData, appointmentData, withdrawalData] =
         await Promise.all([
           apiRequest<AdminOverview>('/api/admin/overview'),
+          apiRequest<AdminUser[]>('/api/admin/users'),
           apiRequest<VerificationRecord[]>('/api/admin/verifications'),
           apiRequest<Gig[]>('/api/admin/gigs'),
           apiRequest<Appointment[]>('/api/admin/appointments'),
@@ -77,10 +96,20 @@ export default function AdminDashboard() {
         ]);
 
       setOverview(overviewData);
+      setUsers(userData);
       setVerifications(verificationData);
       setGigs(gigData);
       setAppointments(appointmentData);
       setWithdrawals(withdrawalData);
+      setSelectedRoles((current) => {
+        const next: Record<string, AdminUser['role']> = {};
+
+        userData.forEach((user) => {
+          next[user.id] = current[user.id] ?? user.role;
+        });
+
+        return next;
+      });
       setReviewNotes((current) => {
         const next: Record<string, string> = {};
 
@@ -139,6 +168,70 @@ export default function AdminDashboard() {
       setError(message);
     } finally {
       setActionState(null);
+    }
+  };
+
+  const handleRoleUpdate = async (userId: string) => {
+    const role = selectedRoles[userId];
+
+    if (!role) {
+      return;
+    }
+
+    setRoleActionState({ userId, role });
+    setError('');
+    setStatusMessage('');
+
+    try {
+      const updated = await apiRequest<AdminUser>(`/api/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role }),
+      });
+
+      setUsers((current) =>
+        current.map((user) => (user.id === userId ? updated : user)),
+      );
+      setStatusMessage(`Updated user role to ${role}.`);
+    } catch (roleError) {
+      const message =
+        roleError instanceof Error ? roleError.message : 'Unable to update that user role right now.';
+      setError(message);
+    } finally {
+      setRoleActionState(null);
+    }
+  };
+
+  const handleWithdrawalDecision = async (
+    withdrawalId: string,
+    status: 'queued' | 'paid' | 'failed',
+  ) => {
+    setWithdrawalActionState({ withdrawalId, status });
+    setError('');
+    setStatusMessage('');
+
+    try {
+      const updated = await apiRequest<WithdrawalRecord>(
+        `/api/admin/withdrawals/${withdrawalId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status }),
+        },
+      );
+
+      setWithdrawals((current) =>
+        current.map((withdrawal) =>
+          withdrawal.id === withdrawalId ? updated : withdrawal,
+        ),
+      );
+      setStatusMessage(`Withdrawal moved to ${status.replace(/_/g, ' ')}.`);
+    } catch (withdrawalError) {
+      const message =
+        withdrawalError instanceof Error
+          ? withdrawalError.message
+          : 'Unable to update that withdrawal right now.';
+      setError(message);
+    } finally {
+      setWithdrawalActionState(null);
     }
   };
 
@@ -324,6 +417,96 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+
+            <AdminSection
+              id="users"
+              title="User Management"
+              subtitle="Review account roles, onboarding progress, and verification state without leaving the admin console."
+            >
+              {users.length === 0 ? (
+                <EmptyAdminState message="No users are available yet." />
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="ds-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Verification</th>
+                        <th>Onboarding</th>
+                        <th>Created</th>
+                        <th>Change Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => {
+                        const isSaving = roleActionState?.userId === user.id;
+                        const selectedRole = selectedRoles[user.id] ?? user.role;
+                        const isOwnAccount = user.uid === profile?.uid;
+
+                        return (
+                          <tr key={user.id}>
+                            <td>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <strong style={{ color: 'var(--color-ink)' }}>
+                                  {user.displayName || 'Unnamed user'}
+                                </strong>
+                                <span style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
+                                  {user.email}
+                                </span>
+                                <span style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
+                                  {user.uid}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <StatusBadge status={user.role} />
+                            </td>
+                            <td>
+                              <StatusBadge status={user.verificationStatus || 'unverified'} />
+                            </td>
+                            <td>{user.onboardingComplete ? 'Complete' : 'Incomplete'}</td>
+                            <td>{formatDate(user.createdAt)}</td>
+                            <td style={{ minWidth: 220 }}>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <select
+                                  className="ds-select"
+                                  value={selectedRole}
+                                  onChange={(event) =>
+                                    setSelectedRoles((current) => ({
+                                      ...current,
+                                      [user.id]: event.target.value as AdminUser['role'],
+                                    }))
+                                  }
+                                  disabled={isSaving || isOwnAccount}
+                                >
+                                  <option value="client">Client</option>
+                                  <option value="dentist">Dentist</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  className="ds-btn ds-btn-sm"
+                                  onClick={() => handleRoleUpdate(user.id)}
+                                  disabled={isSaving || selectedRole === user.role || isOwnAccount}
+                                >
+                                  {isSaving ? <Loader2 size={13} className="spin" /> : 'Save'}
+                                </button>
+                              </div>
+                              {isOwnAccount ? (
+                                <p style={{ marginTop: 6, fontSize: 12, color: 'var(--color-ink-4)' }}>
+                                  You cannot change your own role.
+                                </p>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </AdminSection>
 
             <AdminSection
               id="verifications"
@@ -567,28 +750,80 @@ export default function AdminDashboard() {
                         <th>Status</th>
                         <th>Destination</th>
                         <th>Created</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {withdrawals.map((withdrawal) => (
-                        <tr key={withdrawal.id}>
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <strong style={{ color: 'var(--color-ink)' }}>{withdrawal.email}</strong>
-                              <span style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
-                                {withdrawal.userId}
-                              </span>
-                            </div>
-                          </td>
-                          <td style={{ textTransform: 'capitalize' }}>{withdrawal.provider}</td>
-                          <td>{formatCurrency(withdrawal.amount, withdrawal.currency)}</td>
-                          <td>
-                            <StatusBadge status={withdrawal.status} />
-                          </td>
-                          <td>{withdrawal.destinationLabel}</td>
-                          <td>{formatDate(withdrawal.createdAt)}</td>
-                        </tr>
-                      ))}
+                      {withdrawals.map((withdrawal) => {
+                        const isBusy = withdrawalActionState?.withdrawalId === withdrawal.id;
+                        const isTerminal =
+                          withdrawal.status === 'paid' || withdrawal.status === 'failed';
+
+                        return (
+                          <tr key={withdrawal.id}>
+                            <td>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <strong style={{ color: 'var(--color-ink)' }}>{withdrawal.email}</strong>
+                                <span style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
+                                  {withdrawal.userId}
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ textTransform: 'capitalize' }}>{withdrawal.provider}</td>
+                            <td>{formatCurrency(withdrawal.amount, withdrawal.currency)}</td>
+                            <td>
+                              <StatusBadge status={withdrawal.status} />
+                            </td>
+                            <td>{withdrawal.destinationLabel}</td>
+                            <td>{formatDate(withdrawal.createdAt)}</td>
+                            <td style={{ minWidth: 230 }}>
+                              {isTerminal ? (
+                                <span style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
+                                  Terminal state
+                                </span>
+                              ) : (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                  <button
+                                    type="button"
+                                    className="ds-btn ds-btn-sm"
+                                    onClick={() => handleWithdrawalDecision(withdrawal.id, 'queued')}
+                                    disabled={isBusy || withdrawal.status === 'queued'}
+                                  >
+                                    {isBusy && withdrawalActionState?.status === 'queued' ? (
+                                      <Loader2 size={13} className="spin" />
+                                    ) : null}
+                                    Queue
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ds-btn ds-btn-sm"
+                                    style={{ background: 'var(--color-sage)', color: '#fff', borderColor: 'var(--color-sage)' }}
+                                    onClick={() => handleWithdrawalDecision(withdrawal.id, 'paid')}
+                                    disabled={isBusy}
+                                  >
+                                    {isBusy && withdrawalActionState?.status === 'paid' ? (
+                                      <Loader2 size={13} className="spin" />
+                                    ) : null}
+                                    Mark Paid
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ds-btn ds-btn-sm"
+                                    style={{ background: 'var(--color-ruby)', color: '#fff', borderColor: 'var(--color-ruby)' }}
+                                    onClick={() => handleWithdrawalDecision(withdrawal.id, 'failed')}
+                                    disabled={isBusy}
+                                  >
+                                    {isBusy && withdrawalActionState?.status === 'failed' ? (
+                                      <Loader2 size={13} className="spin" />
+                                    ) : null}
+                                    Mark Failed
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

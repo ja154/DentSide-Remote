@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, LayoutDashboard, LogOut, Menu, Search, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
+import NotificationMenu from './NotificationMenu';
 import SiteFooter from './SiteFooter';
 
 const CLIENT_NAV_ITEMS = [
@@ -110,6 +111,7 @@ export default function ClientLayout({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <NotificationMenu />
           <span className="hidden sm:block text-[13px] text-[var(--color-ink-4)] font-medium">
             {profile?.displayName || profile?.email}
           </span>

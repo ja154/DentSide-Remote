@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { apiRequest, type WalletSummary, type WithdrawalRecord } from '../lib/api';
+import {
+  apiRequest,
+  type WalletSummary,
+  type WithdrawalProvider,
+  type WithdrawalRecord,
+} from '../lib/api';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Wallet as WalletIcon, Bell,
+  Wallet as WalletIcon,
   CreditCard, Smartphone, Plus, ShieldCheck as ShieldIcon,
-  Clock, Receipt, RefreshCcw, ArrowRight, Lock, BadgeCheck, HelpCircle, Menu, ShieldCheck
+  Clock, Receipt, RefreshCcw, ArrowRight, Lock, BadgeCheck, HelpCircle, Loader2, Menu
 } from 'lucide-react';
 import DentistSidebar from '../components/DentistSidebar';
+import NotificationMenu from '../components/NotificationMenu';
 
 export default function Wallet() {
   const { profile } = useAuth();
@@ -15,40 +21,89 @@ export default function Wallet() {
   const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRecord[]>([]);
   const [error, setError] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isWithdrawFormOpen, setIsWithdrawFormOpen] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [withdrawalProvider, setWithdrawalProvider] = useState<WithdrawalProvider>('stripe');
+  const [destinationLabel, setDestinationLabel] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loadWallet = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const [summary, history] = await Promise.all([
+        apiRequest<WalletSummary>('/api/withdraw/summary'),
+        apiRequest<WithdrawalRecord[]>('/api/withdraw/history'),
+      ]);
+
+      setWalletSummary(summary);
+      setWithdrawals(history);
+    } catch (loadError) {
+      const message = loadError instanceof Error ? loadError.message : 'Unable to load wallet data right now.';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let cancelled = false;
-
-    const loadWallet = async () => {
-      try {
-        const [summary, history] = await Promise.all([
-          apiRequest<WalletSummary>('/api/withdraw/summary'),
-          apiRequest<WithdrawalRecord[]>('/api/withdraw/history'),
-        ]);
-
-        if (!cancelled) {
-          setWalletSummary(summary);
-          setWithdrawals(history);
-        }
-      } catch (loadError) {
-        if (!cancelled) {
-          const message = loadError instanceof Error ? loadError.message : 'Unable to load wallet data right now.';
-          setError(message);
-        }
-      }
-    };
-
     loadWallet();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const currency = walletSummary?.defaultCurrency || 'USD';
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+
+  const handleWithdrawalSubmit = async () => {
+    setError('');
+    setStatusMessage('');
+
+    const amount = Number(withdrawalAmount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a valid withdrawal amount greater than zero.');
+      return;
+    }
+
+    if (destinationLabel.trim().length < 3) {
+      setError('Enter a destination label with at least 3 characters.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await apiRequest<WithdrawalRecord & { message?: string }>('/api/withdraw', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          currency,
+          provider: withdrawalProvider,
+          destinationLabel: destinationLabel.trim(),
+        }),
+      });
+
+      setStatusMessage(
+        response.message ||
+          `${withdrawalProvider === 'mpesa' ? 'M-Pesa' : 'Stripe'} withdrawal request submitted.`,
+      );
+      setWithdrawalAmount('');
+      setDestinationLabel('');
+      setIsWithdrawFormOpen(false);
+      await loadWallet();
+    } catch (submitError) {
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : 'Unable to submit the withdrawal request right now.';
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="ds-layout">
@@ -81,9 +136,7 @@ export default function Wallet() {
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Wallet & Earnings</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
-            <Bell size={15} />
-          </button>
+          <NotificationMenu />
           <div className="ds-avatar ds-avatar-md">
             <img src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
@@ -116,7 +169,11 @@ export default function Wallet() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button style={{ background: '#fff', color: 'var(--color-teal-dark)', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}>
+                  <button
+                    type="button"
+                    style={{ background: '#fff', color: 'var(--color-teal-dark)', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}
+                    onClick={() => setIsWithdrawFormOpen((open) => !open)}
+                  >
                     Withdraw Now
                   </button>
                   <button style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}>
@@ -126,6 +183,79 @@ export default function Wallet() {
               </div>
               <WalletIcon size={160} color="rgba(255,255,255,0.06)" style={{ position: 'absolute', right: -20, bottom: -24 }} />
             </div>
+
+            {isWithdrawFormOpen ? (
+              <div className="ds-card" style={{ padding: 24 }}>
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 4 }}>
+                      Request Withdrawal
+                    </h3>
+                    <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
+                      Submit a payout request through the new withdrawal endpoint.
+                    </p>
+                  </div>
+                  <span className="ds-badge ds-badge-teal">API Connected</span>
+                </div>
+
+                <div className="ds-grid-2">
+                  <div className="ds-form-group">
+                    <label className="ds-label">Amount</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="ds-input"
+                      value={withdrawalAmount}
+                      onChange={(event) => setWithdrawalAmount(event.target.value)}
+                      placeholder="250.00"
+                    />
+                  </div>
+                  <div className="ds-form-group">
+                    <label className="ds-label">Provider</label>
+                    <select
+                      className="ds-select"
+                      value={withdrawalProvider}
+                      onChange={(event) => setWithdrawalProvider(event.target.value as WithdrawalProvider)}
+                    >
+                      <option value="stripe">Stripe</option>
+                      <option value="mpesa">M-Pesa</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="ds-form-group" style={{ marginBottom: 0 }}>
+                  <label className="ds-label">Destination Label</label>
+                  <input
+                    type="text"
+                    className="ds-input"
+                    value={destinationLabel}
+                    onChange={(event) => setDestinationLabel(event.target.value)}
+                    placeholder={withdrawalProvider === 'mpesa' ? 'Safaricom 07xx xxx xxx' : 'Main business checking'}
+                  />
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    className="ds-btn ds-btn-primary"
+                    onClick={handleWithdrawalSubmit}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? <Loader2 size={14} className="spin" /> : <WalletIcon size={14} />}
+                    Submit Request
+                  </button>
+                  <button
+                    type="button"
+                    className="ds-btn ds-btn-ghost"
+                    onClick={() => setIsWithdrawFormOpen(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             {/* Sub-stats */}
             <div className="ds-grid-2">
@@ -153,7 +283,12 @@ export default function Wallet() {
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-ink)' }}>Recent Activity</h3>
                 <Link to="/wallet" style={{ fontSize: 13, color: 'var(--color-teal)', fontWeight: 600, textDecoration: 'none' }}>View Full Ledger</Link>
               </div>
-              {withdrawals.length > 0 ? (
+              {isLoading ? (
+                <div className="ds-card" style={{ padding: 48, textAlign: 'center' }}>
+                  <RefreshCcw size={18} className="spin" color="var(--color-teal)" style={{ margin: '0 auto 12px' }} />
+                  <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>Loading wallet activity…</p>
+                </div>
+              ) : withdrawals.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {withdrawals.slice(0, 5).map((record) => (
                     <div key={record.id} className="ds-card" style={{ padding: 20 }}>
@@ -180,6 +315,9 @@ export default function Wallet() {
               )}
               {error && (
                 <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-ruby)' }}>{error}</p>
+              )}
+              {statusMessage && (
+                <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-sage)' }}>{statusMessage}</p>
               )}
             </div>
           </div>
@@ -274,7 +412,7 @@ function PayoutMethod({ icon, iconBg, label, sub, active }: { icon: React.ReactN
         <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-ink)', marginBottom: 2 }}>{label}</p>
         <p style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>{sub}</p>
       </div>
-      {active && <ShieldCheck size={16} color="var(--color-teal)" />}
+      {active && <ShieldIcon size={16} color="var(--color-teal)" />}
     </div>
   );
 }

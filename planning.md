@@ -6,7 +6,7 @@
 - [x] Design Landing Page & Dashboard UI
 - [x] Setup Full Stack Architecture (Express + Vite)
 - [x] Add backend route scaffolding for auth profiles, gigs, verification, appointments, withdrawals, admin audit, health checks, and Stripe webhook intake
-- [ ] Implement Dentist profiles (verified)
+- [x] Implement Dentist profiles (verified)
 - [ ] Build Gig marketplace (Freelance focus)
 - [ ] Integrate Payments (M-Pesa, Stripe)
 - [ ] Implement Simple matching (rule-based + basic AI)
@@ -17,6 +17,7 @@
 - Stripe and M-Pesa flows are scaffolded at the API boundary, with provider configuration still needed before live payouts can be processed.
 - Verification intake now has a backend home, but file storage remains metadata-only until a production bucket workflow is enabled.
 - An admin command-center UI now exists for operations review and verification moderation.
+- Verified dentist search, consult requests, withdrawal requests, and admin role/payout actions are now connected to the live Express API from the frontend.
 
 ## 🟡 PHASE 2 — Teledentistry Layer (3–6 months)
 **Focus:** Second opinions, Treatment planning (No prescriptions initially to avoid legal risk).

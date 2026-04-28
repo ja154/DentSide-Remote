@@ -23,18 +23,29 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Backend Surface
 - `GET /health`: health check with Firebase, storage, Stripe, and M-Pesa configuration flags.
 - `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Firebase bearer-token validation.
-- `GET /api/gigs`, `POST /api/gigs`: backend structure for the gig marketplace collection.
+- `GET /api/dentists`, `GET /api/dentists/:dentistId`: verified dentist directory for clients and admins.
+- `GET /api/gigs`, `GET /api/gigs/:gigId`, `POST /api/gigs`, `PATCH /api/gigs/:gigId`, `DELETE /api/gigs/:gigId`: backend structure for the gig marketplace collection.
 - `POST /api/verify`, `GET /api/verify/status`: verification request intake with server-side validation.
-- `GET /api/appointments`, `POST /api/appointments`: appointment and consult request structure for the client portal.
+- `GET /api/appointments`, `GET /api/appointments/:appointmentId`, `POST /api/appointments`, `PATCH /api/appointments/:appointmentId`: consult request structure with role-based state transitions.
 - `GET /api/withdraw/summary`, `GET /api/withdraw/history`, `POST /api/withdraw`: wallet and payout request structure.
-- `GET /api/admin/*`, `PATCH /api/admin/verifications/:userId`: admin audit and moderation routes.
+- `GET /api/notifications`, `PATCH /api/notifications/:notificationId`, `POST /api/notifications/read-all`: in-app notification feed with read tracking.
+- `GET /api/admin/*`, `PATCH /api/admin/verifications/:userId`, `PATCH /api/admin/users/:userId/role`, `PATCH /api/admin/withdrawals/:withdrawalId`: admin audit and moderation routes.
 - `POST /api/webhooks/stripe`: Stripe webhook signature verification scaffold.
 
 ## Admin Console
 - Admin users now have a dedicated `/admin` command center for:
   - overview counts and integration readiness
+  - user role management
   - verification moderation with approve/reject/pending actions
-  - read-only reviews of gigs, appointments, and withdrawals
+  - withdrawal queue decisions
+  - reviews of gigs and appointments
+
+## Frontend Integration Status
+- Client network and appointment screens now use the live `/api/dentists` and `/api/appointments` routes for verified search, consult creation, and client-side cancellation.
+- The dentist dashboard now shows live consult queue actions from `/api/appointments` and live wallet metrics from `/api/withdraw/summary`.
+- The wallet screen can now submit withdrawal requests through `POST /api/withdraw`.
+- A shared in-app notification menu now reads from `/api/notifications`, and appointment/admin actions emit notification records for affected users.
+- The admin command center now includes user role changes and withdrawal queue actions in addition to the earlier verification moderation tools.
 
 ## Setup & Running Locally
 1. Clone the repository.

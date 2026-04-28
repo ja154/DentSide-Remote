@@ -5,6 +5,7 @@ import { AppError } from '../errors.ts';
 import { AppointmentCreateSchema, AppointmentPatchSchema } from '../schemas.ts';
 import { getOptionalDocument, listDocuments, setDocument } from '../services/firebase-rest.ts';
 import { ensureProfile, loadUserProfile, requireAuth, requireRole } from '../middleware/auth.ts';
+import { createNotification } from './notifications.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { AppointmentRecord, BookingStatus } from '../types.ts';
 
@@ -100,6 +101,20 @@ appointmentsRouter.post(
     };
 
     await setDocument(`bookings/${documentId}`, appointment, req.firebaseToken!);
+
+    if (appointment.dentistId) {
+      await createNotification(
+        {
+          userId: appointment.dentistId,
+          type: 'new_appointment_request',
+          title: 'New appointment request',
+          body: `${appointment.clientName} requested a consult${appointment.scheduledFor ? ` for ${appointment.scheduledFor}` : '.'}`,
+          relatedId: documentId,
+        },
+        req.firebaseToken!,
+      ).catch(() => null);
+    }
+
     res.status(201).json({ id: documentId, ...appointment });
   }),
 );
@@ -184,6 +199,64 @@ appointmentsRouter.patch(
       merge: true,
     });
 
-    res.json({ id: appointmentId, ...existing, ...updatePayload });
+    const nextAppointment = { id: appointmentId, ...existing, ...updatePayload };
+
+    if (patch.status === 'confirmed') {
+      await createNotification(
+        {
+          userId: existing.clientId,
+          type: 'appointment_confirmed',
+          title: 'Appointment confirmed',
+          body: `${existing.dentistName || patch.dentistName || 'Your dentist'} confirmed your consult request.`,
+          relatedId: appointmentId,
+        },
+        req.firebaseToken!,
+      ).catch(() => null);
+    }
+
+    if (patch.status === 'completed') {
+      await createNotification(
+        {
+          userId: existing.clientId,
+          type: 'appointment_completed',
+          title: 'Appointment completed',
+          body: `${existing.dentistName || patch.dentistName || 'Your dentist'} marked the consult as completed.`,
+          relatedId: appointmentId,
+        },
+        req.firebaseToken!,
+      ).catch(() => null);
+    }
+
+    if (patch.status === 'cancelled') {
+      const notificationTargets = new Set<string>();
+
+      if (role === 'client' && existing.dentistId) {
+        notificationTargets.add(existing.dentistId);
+      }
+
+      if ((role === 'dentist' || role === 'admin') && existing.clientId) {
+        notificationTargets.add(existing.clientId);
+      }
+
+      await Promise.all(
+        Array.from(notificationTargets).map((targetUserId) =>
+          createNotification(
+            {
+              userId: targetUserId,
+              type: 'appointment_cancelled',
+              title: 'Appointment cancelled',
+              body:
+                role === 'client'
+                  ? `${existing.clientName} cancelled the consult request.`
+                  : `${existing.dentistName || patch.dentistName || 'Your dentist'} cancelled the consult.`,
+              relatedId: appointmentId,
+            },
+            req.firebaseToken!,
+          ).catch(() => null),
+        ),
+      );
+    }
+
+    res.json(nextAppointment);
   }),
 );

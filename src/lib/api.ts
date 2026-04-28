@@ -6,6 +6,17 @@ export type GigStatus = 'draft' | 'open' | 'closed';
 export type BookingStatus = 'requested' | 'confirmed' | 'completed' | 'cancelled';
 export type WithdrawalProvider = 'stripe' | 'mpesa';
 export type WithdrawalStatus = 'pending_provider_setup' | 'queued' | 'paid' | 'failed';
+export type NotificationType =
+  | 'verification_approved'
+  | 'verification_rejected'
+  | 'appointment_confirmed'
+  | 'appointment_cancelled'
+  | 'appointment_completed'
+  | 'new_appointment_request'
+  | 'gig_posted'
+  | 'withdrawal_paid'
+  | 'withdrawal_failed'
+  | 'system';
 
 export interface UserProfile {
   uid: string;
@@ -36,6 +47,19 @@ export interface VerificationRecord {
   reviewNote?: string;
   submittedAt: string;
   updatedAt: string;
+}
+
+export interface PublicDentistProfile {
+  id: string;
+  uid: string;
+  displayName?: string;
+  photoURL?: string;
+  role: Role;
+  experience?: string;
+  interests?: string[];
+  availability?: string;
+  verificationStatus?: VerificationStatus;
+  onboardingComplete?: boolean;
 }
 
 export interface Gig {
@@ -91,6 +115,23 @@ export interface WalletSummary {
   };
 }
 
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  read: boolean;
+  relatedId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationFeed {
+  notifications: NotificationItem[];
+  unreadCount: number;
+}
+
 export interface AdminOverview {
   counts: {
     users: number;
@@ -105,6 +146,16 @@ export interface AdminOverview {
     stripe: boolean;
     mpesa: boolean;
   };
+}
+
+export interface AdminUser extends UserProfile {
+  id: string;
+  updatedAt?: string;
+}
+
+export interface VerificationStatusResponse {
+  verification: VerificationRecord | null;
+  storageConfigured: boolean;
 }
 
 export function getDashboardPathForRole(role: Role) {

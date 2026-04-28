@@ -3,11 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiRequest, type Gig } from '../lib/api';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Bell,
   Search, SlidersHorizontal, MapPin, DollarSign, SearchX,
   TrendingUp, PlusSquare, Menu
 } from 'lucide-react';
 import DentistSidebar from '../components/DentistSidebar';
+import NotificationMenu from '../components/NotificationMenu';
 
 const TRENDING_SKILLS = ['Invisalign', 'iTero Scanning', 'Dental AI', 'Sleep Apnea', 'Implants', 'Oral Surgery'];
 
@@ -89,9 +89,7 @@ export default function OpportunityEngine() {
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Opportunity Engine</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
-            <Bell size={15} />
-          </button>
+          <NotificationMenu />
           <div className="ds-avatar ds-avatar-md">
             <img src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
