@@ -18,14 +18,14 @@ export default function Login() {
   const [step, setStep] = useState<'login' | 'role_selection'>('login');
 
   useEffect(() => {
-    if (!authLoading && user) {
-      if (profile) {
-        navigate(getDashboardPathForRole(profile.role));
-      } else if (!isSigningIn && !pendingRoleSelection) {
-        setStep('role_selection');
-      }
+    if (authLoading) return;
+    if (!user) return;
+    
+    if (profile) {
+      navigate(getDashboardPathForRole(profile.role));
     }
-  }, [user, profile, authLoading, isSigningIn, pendingRoleSelection, navigate]);
+    // Don't auto-trigger role_selection here — it's only shown after explicit Google sign-in
+  }, [user, profile, authLoading, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
