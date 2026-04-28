@@ -7,8 +7,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { getDashboardPathForRole } from './lib/api';
-import Landing from './components/Landing';
-import Dashboard from './components/Dashboard';
+import LandingPage from './pages/LandingPage';
+import DentistDashboard from './pages/DentistDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import ClientNetwork from './pages/ClientNetwork';
 import ClientAppointments from './pages/ClientAppointments';
@@ -53,7 +53,7 @@ function AppRoutes() {
         user && profile ? (
           <Navigate to={getDashboardPathForRole(profile.role)} replace />
         ) : (
-          <Landing onGetStarted={() => navigate('/login')} />
+          <LandingPage onGetStarted={() => navigate('/login')} />
         )
       } />
       <Route path="/login" element={<Login />} />
@@ -61,7 +61,7 @@ function AppRoutes() {
         path="/dashboard" 
         element={
           <ProtectedRoute allowedRole="dentist">
-            <Dashboard />
+            <DentistDashboard />
           </ProtectedRoute>
         } 
       />

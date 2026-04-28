@@ -11,8 +11,8 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import DentistSidebar from './DentistSidebar';
-import NotificationMenu from './NotificationMenu';
+import DentistSidebar from '../components/DentistSidebar';
+import NotificationMenu from '../components/NotificationMenu';
 import { apiRequest, type Appointment, type WalletSummary } from '../lib/api';
 
 type AppointmentActionState = {
@@ -20,7 +20,7 @@ type AppointmentActionState = {
   nextStatus: 'confirmed' | 'completed' | 'cancelled';
 } | null;
 
-export default function Dashboard() {
+export default function DentistDashboard() {
   const { profile } = useAuth();
   const location = useLocation();
 
