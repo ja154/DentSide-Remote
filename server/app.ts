@@ -46,7 +46,16 @@ export async function createApp() {
 
   app.use(
     helmet({
-      contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
+      contentSecurityPolicy: env.NODE_ENV === 'production' ? {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://*.googleusercontent.com"],
+          imgSrc: ["'self'", "data:", "https://*.googleusercontent.com"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        },
+      } : false,
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
       referrerPolicy: { policy: 'no-referrer' },
