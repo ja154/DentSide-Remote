@@ -197,6 +197,30 @@ const getAuthToken = async () => {
   return auth.currentUser.getIdToken();
 };
 
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+function normalizeApiBaseUrl(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.endsWith('/') ? trimmed : `${trimmed}/`;
+}
+
+export function resolveApiUrl(input: string) {
+  if (!API_BASE_URL || /^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  const normalizedPath = input.startsWith('/') ? input.slice(1) : input;
+  return new URL(normalizedPath, API_BASE_URL).toString();
+}
+
 export async function apiRequest<T>(input: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const token = await getAuthToken();
@@ -209,7 +233,7 @@ export async function apiRequest<T>(input: string, init: RequestInit = {}): Prom
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(input, {
+  const response = await fetch(resolveApiUrl(input), {
     ...init,
     headers,
   });

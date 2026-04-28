@@ -8,6 +8,7 @@
 - [x] **Wallet Requests**: Connect the wallet screen to `POST /api/withdraw` for real withdrawal submission.
 - [x] **Operational Actions**: Extend the admin UI with `/api/admin/users` role changes and `/api/admin/withdrawals` queue decisions.
 - [x] **Notifications UI**: Add a shared notification center backed by `/api/notifications`, with appointment and admin actions emitting notification records.
+- [x] **Deployment Readiness**: Support API-only Render hosting with frontend API base URL configuration and production CORS/static-serving controls.
 - [ ] **Escrow System**: Design a basic escrow flow to hold funds until a gig is completed to build trust.
 
 - [ ] **Security Hardening**: Add production observability, alerting, and stronger token/session diagnostics beyond the new request IDs, Zod validation, and protected Firebase-backed routes.

@@ -18,6 +18,7 @@
 - Verification intake now has a backend home, but file storage remains metadata-only until a production bucket workflow is enabled.
 - An admin command-center UI now exists for operations review and verification moderation.
 - Verified dentist search, consult requests, withdrawal requests, and admin role/payout actions are now connected to the live Express API from the frontend.
+- The backend can now run in API-only production mode for Render, while separately hosted frontends can target it through `VITE_API_BASE_URL`.
 
 ## 🟡 PHASE 2 — Teledentistry Layer (3–6 months)
 **Focus:** Second opinions, Treatment planning (No prescriptions initially to avoid legal risk).

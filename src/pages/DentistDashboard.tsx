@@ -85,9 +85,8 @@ export default function DentistDashboard() {
     setIsMatching(true);
 
     try {
-      const response = await fetch('/api/match', {
+      const data = await apiRequest<any[]>('/api/match', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiKey,
           profile: {
@@ -98,18 +97,12 @@ export default function DentistDashboard() {
           },
         }),
       });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed');
-      }
-
-      const data = await response.json();
       if (Array.isArray(data) && data.length > 0) {
         setMatches(data);
       }
-    } catch (matchError: any) {
-      alert(matchError.message);
+    } catch (matchError) {
+      const message = matchError instanceof Error ? matchError.message : 'Failed to generate matches.';
+      alert(message);
     } finally {
       setIsMatching(false);
     }

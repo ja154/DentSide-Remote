@@ -48,7 +48,7 @@ export async function createApp() {
     helmet({
       contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
       crossOriginEmbedderPolicy: false,
-      crossOriginOpenerPolicy: false,
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
       referrerPolicy: { policy: 'no-referrer' },
     }),
   );
@@ -90,6 +90,9 @@ export async function createApp() {
   app.use('/api/withdraw', protectedLimiter, withdrawRouter);
   app.use('/api/notifications', readLimiter, notificationsRouter);
   app.use('/api/admin', protectedLimiter, adminRouter);
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'API route not found.', code: 'not_found' });
+  });
 
   if (env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -98,7 +101,7 @@ export async function createApp() {
     });
 
     app.use(vite.middlewares);
-  } else {
+  } else if (env.serveStaticFrontend) {
     const distPath = path.join(process.cwd(), 'dist');
     const spaFallbackLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
@@ -110,6 +113,18 @@ export async function createApp() {
     app.use(express.static(distPath));
     app.get('*', spaFallbackLimiter, (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    app.get('/', (_req, res) => {
+      res.json({
+        service: 'DentSide Remote API',
+        status: 'ok',
+        health: '/health',
+      });
+    });
+
+    app.get('*', (_req, res) => {
+      res.status(404).json({ error: 'Route not found.', code: 'not_found' });
     });
   }
 
