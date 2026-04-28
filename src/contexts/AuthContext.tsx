@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const nextProfile = await apiRequest<UserProfile>('/api/auth/profile');
+      const nextProfile = await apiRequest<UserProfile | null>('/api/auth/profile');
       setProfile(nextProfile);
       return nextProfile;
     } catch (error) {

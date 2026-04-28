@@ -48,7 +48,7 @@ export async function createApp() {
     helmet({
       contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
       crossOriginEmbedderPolicy: false,
-      crossOriginOpenerPolicy: false,
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
       referrerPolicy: { policy: 'no-referrer' },
     }),
   );

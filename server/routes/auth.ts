@@ -44,11 +44,7 @@ authRouter.get(
   '/profile',
   loadUserProfile,
   asyncHandler(async (req, res) => {
-    if (!req.profile) {
-      throw new AppError('No profile exists for this user yet.', 404, 'not_found');
-    }
-
-    res.json(req.profile);
+    res.json(req.profile || null);
   }),
 );
 
