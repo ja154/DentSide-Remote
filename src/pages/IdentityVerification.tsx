@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import BrandMark from '../components/BrandMark';
-import { showPending } from '../lib/ui';
+import { apiRequest } from '../lib/api';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
+  Menu,
   ArrowLeft, Upload, Clock, BadgeCheck, HelpCircle, Lock, CheckCircle2, CircleAlert
 } from 'lucide-react';
+import DentistSidebar from '../components/DentistSidebar';
+import NotificationMenu from '../components/NotificationMenu';
 
 
 type FormState = {
@@ -22,13 +23,6 @@ type FormState = {
 
 const STATE_OPTIONS = ['California', 'New York', 'Texas', 'Florida', 'Washington', 'Kenya'];
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Gigs', href: '/opportunities', icon: Briefcase },
-  { label: 'Wallet', href: '/wallet', icon: Wallet },
-  { label: 'Profile', href: '/verification', icon: ShieldCheck },
-];
-
 const STEPS = [
   { num: 1, label: 'Personal Information', sub: 'Basic contact & dental residency details.', active: true },
   { num: 2, label: 'License Verification', sub: 'Official state licensure documentation.', active: true },
@@ -36,7 +30,7 @@ const STEPS = [
 ];
 
 export default function IdentityVerification() {
-  const { profile, logout, updateProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -54,6 +48,7 @@ export default function IdentityVerification() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const checks = useMemo(() => {
     const personalComplete = form.legalName.trim().length > 2 && form.email.includes('@') && form.clinic.trim().length > 2;
@@ -95,11 +90,12 @@ export default function IdentityVerification() {
 
     setIsSubmitting(true);
     try {
-      await updateProfile({
-        displayName: form.legalName.trim(),
-        onboardingComplete: true,
+      const response = await apiRequest<{ message?: string }>('/api/verify', {
+        method: 'POST',
+        body: JSON.stringify(form),
       });
-      setSuccess('Verification submitted. Review typically completes within 24–48 business hours.');
+      await refreshProfile();
+      setSuccess(response.message || 'Verification submitted. Review typically completes within 24–48 business hours.');
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Unable to save verification details right now.';
       setError(message);
@@ -110,36 +106,36 @@ export default function IdentityVerification() {
 
   return (
     <div className="ds-layout">
-      {/* Sidebar */}
-      <aside className="ds-sidebar">
-        <div className="ds-sidebar-logo">
-          <BrandMark size={32} showText={false} />
-        </div>
-        <nav className="ds-sidebar-nav">
-          <div className="ds-sidebar-section">
-            <div className="ds-sidebar-section-label">Navigation</div>
-            {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
-              <Link key={href} to={href} className={`ds-nav-item${location.pathname === href ? ' active' : ''}`}>
-                <Icon size={16} className="nav-icon" /> {label}
-              </Link>
-            ))}
-          </div>
-          <div className="ds-sidebar-section">
-            <button className="ds-nav-item" style={{ color: 'var(--color-ruby)' }}
-              onClick={async () => { await logout(); navigate('/'); }}>
-              <LogOut size={16} className="nav-icon" /> Sign Out
-            </button>
-          </div>
-        </nav>
-      </aside>
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="ds-sidebar-backdrop md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      <DentistSidebar
+        pathname={location.pathname}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Identity Verification</p>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
-            <Bell size={15} />
+          <button
+            type="button"
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu size={16} />
           </button>
+          <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Identity Verification</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <NotificationMenu />
           <div className="ds-avatar ds-avatar-md">
             <img src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
@@ -154,7 +150,7 @@ export default function IdentityVerification() {
           <p className="ds-page-subtitle">As a premier platform for dental professionals, we require a standard verification process to ensure clinical integrity.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 28, alignItems: 'start' }}>
+        <div className="grid items-start gap-7 xl:grid-cols-[260px_minmax(0,1fr)]">
           {/* Left: Progress Steps */}
           <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="ds-card" style={{ padding: 24 }}>
@@ -304,7 +300,7 @@ export default function IdentityVerification() {
             )}
 
             {/* Action Bar */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
+            <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
               <button onClick={() => navigate(-1)} className="ds-btn ds-btn-ghost ds-btn-sm">
                 <ArrowLeft size={14} /> Back
               </button>

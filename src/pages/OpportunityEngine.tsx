@@ -1,63 +1,95 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import BrandMark from '../components/BrandMark';
-import { showPending } from '../lib/ui';
+import { apiRequest, type Gig } from '../lib/api';
+import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Briefcase, Wallet, ShieldCheck, Bell, LogOut,
   Search, SlidersHorizontal, MapPin, DollarSign, SearchX,
-  TrendingUp, PlusSquare
+  TrendingUp, PlusSquare, Menu
 } from 'lucide-react';
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Gigs', href: '/opportunities', icon: Briefcase },
-  { label: 'Wallet', href: '/wallet', icon: Wallet },
-  { label: 'Profile', href: '/verification', icon: ShieldCheck },
-];
+import DentistSidebar from '../components/DentistSidebar';
+import NotificationMenu from '../components/NotificationMenu';
 
 const TRENDING_SKILLS = ['Invisalign', 'iTero Scanning', 'Dental AI', 'Sleep Apnea', 'Implants', 'Oral Surgery'];
 
 export default function OpportunityEngine() {
-  const { profile, logout } = useAuth();
-  const navigate = useNavigate();
+  const { profile } = useAuth();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGigs = async () => {
+      try {
+        const data = await apiRequest<Gig[]>('/api/gigs');
+        if (!cancelled) {
+          setGigs(data);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          const message = loadError instanceof Error ? loadError.message : 'Unable to load gigs right now.';
+          setError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadGigs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const visibleGigs = gigs.filter((gig) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    return [gig.title, gig.company, gig.type, gig.description || '', ...gig.tags]
+      .join(' ')
+      .toLowerCase()
+      .includes(query);
+  });
 
   return (
     <div className="ds-layout">
-      {/* Sidebar */}
-      <aside className="ds-sidebar">
-        <div className="ds-sidebar-logo">
-          <BrandMark size={32} showText={false} />
-        </div>
-        <nav className="ds-sidebar-nav">
-          <div className="ds-sidebar-section">
-            <div className="ds-sidebar-section-label">Navigation</div>
-            {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
-              <Link key={href} to={href} className={`ds-nav-item${location.pathname === href ? ' active' : ''}`}>
-                <Icon size={16} className="nav-icon" /> {label}
-              </Link>
-            ))}
-          </div>
-          <div className="ds-sidebar-section">
-            <button className="ds-nav-item" style={{ color: 'var(--color-ruby)' }}
-              onClick={async () => { await logout(); navigate('/'); }}>
-              <LogOut size={16} className="nav-icon" /> Sign Out
-            </button>
-          </div>
-        </nav>
-      </aside>
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="ds-sidebar-backdrop md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      <DentistSidebar
+        pathname={location.pathname}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* Top Bar */}
       <header className="ds-topbar">
-        <div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu size={16} />
+          </button>
           <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Opportunity Engine</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ padding: '7px 10px', borderRadius: '50%' }}>
-            <Bell size={15} />
-          </button>
+          <NotificationMenu />
           <div className="ds-avatar ds-avatar-md">
             <img src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
@@ -90,17 +122,51 @@ export default function OpportunityEngine() {
         </div>
 
         {/* Content Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           {/* Left: Gig List */}
           <div>
-            <div className="ds-card" style={{ padding: 56, textAlign: 'center' }}>
-              <SearchX size={40} color="var(--color-fog-3)" style={{ margin: '0 auto 16px' }} />
-              <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', fontSize: 16, marginBottom: 8 }}>No matching gigs found</h4>
-              <p style={{ fontSize: 13, color: 'var(--color-ink-4)', maxWidth: 380, margin: '0 auto 20px', lineHeight: 1.6 }}>
-                There are currently no active opportunities matching your profile criteria. Check back later or adjust your filters.
-              </p>
-              <button onClick={() => setSearchQuery('')} className="ds-btn ds-btn-ghost ds-btn-sm">Clear Filters</button>
-            </div>
+            {isLoading ? (
+              <div className="ds-card" style={{ padding: 56, textAlign: 'center' }}>
+                <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>Loading opportunities…</p>
+              </div>
+            ) : visibleGigs.length === 0 ? (
+              <div className="ds-card" style={{ padding: 56, textAlign: 'center' }}>
+                <SearchX size={40} color="var(--color-fog-3)" style={{ margin: '0 auto 16px' }} />
+                <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', fontSize: 16, marginBottom: 8 }}>No matching gigs found</h4>
+                <p style={{ fontSize: 13, color: 'var(--color-ink-4)', maxWidth: 380, margin: '0 auto 20px', lineHeight: 1.6 }}>
+                  There are currently no active opportunities matching your profile criteria. Check back later or adjust your filters.
+                </p>
+                <button onClick={() => setSearchQuery('')} className="ds-btn ds-btn-ghost ds-btn-sm">Clear Filters</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {visibleGigs.map((gig) => (
+                  <div key={gig.id} className="ds-card" style={{ padding: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 10 }}>
+                      <div>
+                        <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 4 }}>{gig.title}</h3>
+                        <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>{gig.company} · {gig.type}</p>
+                      </div>
+                      <span className="ds-badge ds-badge-teal">{gig.rateLabel}</span>
+                    </div>
+                    {gig.description && (
+                      <p style={{ fontSize: 13, color: 'var(--color-ink-4)', lineHeight: 1.6, marginBottom: 14 }}>
+                        {gig.description}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {gig.tags.map((tag) => (
+                        <span key={tag} className="ds-tag">{tag}</span>
+                      ))}
+                      {gig.remoteOnly && <span className="ds-tag">Remote only</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {error && (
+              <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-ruby)' }}>{error}</p>
+            )}
           </div>
 
           {/* Right: Sidebar Insights */}

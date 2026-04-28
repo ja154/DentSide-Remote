@@ -1,6 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import BrandMark from './BrandMark';
+import BrandMark from '../components/BrandMark';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -59,7 +58,7 @@ const TICKER_ITEMS = [
   'M-Pesa Payouts', 'AI Matchmaker', 'License Verification',
 ];
 
-export default function Landing({ onGetStarted }: LandingProps) {
+export default function LandingPage({ onGetStarted }: LandingProps) {
   return (
     <div style={{ fontFamily: 'var(--font-sans)', background: 'var(--color-ink)', color: 'var(--color-white)' }}>
 

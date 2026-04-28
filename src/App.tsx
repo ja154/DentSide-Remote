@@ -6,11 +6,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Landing from './components/Landing';
-import Dashboard from './components/Dashboard';
+import { getDashboardPathForRole } from './lib/api';
+import LandingPage from './pages/LandingPage';
+import DentistDashboard from './pages/DentistDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import ClientNetwork from './pages/ClientNetwork';
 import ClientAppointments from './pages/ClientAppointments';
+import AdminDashboard from './pages/AdminDashboard';
 import IdentityVerification from './pages/IdentityVerification';
 import OpportunityEngine from './pages/OpportunityEngine';
 import Wallet from './pages/Wallet';
@@ -19,7 +21,7 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import { Loader2 } from 'lucide-react';
 
-function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, allowedRole?: 'dentist' | 'client' }) {
+function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, allowedRole?: 'dentist' | 'client' | 'admin' }) {
   const { user, profile, loading } = useAuth();
 
   if (loading) {
@@ -35,8 +37,7 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, 
   }
 
   if (allowedRole && profile && profile.role !== allowedRole) {
-    // Redirect to correct dashboard if wrong role
-    return <Navigate to={profile.role === 'dentist' ? '/dashboard' : '/client-dashboard'} replace />;
+    return <Navigate to={getDashboardPathForRole(profile.role)} replace />;
   }
 
   return <>{children}</>;
@@ -50,9 +51,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={
         user && profile ? (
-          <Navigate to={profile.role === 'dentist' ? '/dashboard' : '/client-dashboard'} replace />
+          <Navigate to={getDashboardPathForRole(profile.role)} replace />
         ) : (
-          <Landing onGetStarted={() => navigate('/login')} />
+          <LandingPage onGetStarted={() => navigate('/login')} />
         )
       } />
       <Route path="/login" element={<Login />} />
@@ -60,7 +61,7 @@ function AppRoutes() {
         path="/dashboard" 
         element={
           <ProtectedRoute allowedRole="dentist">
-            <Dashboard />
+            <DentistDashboard />
           </ProtectedRoute>
         } 
       />
@@ -85,6 +86,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="dentist">
             <Wallet />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDashboard />
           </ProtectedRoute>
         } 
       />

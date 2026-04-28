@@ -1,20 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
-
-interface UserProfile {
-  uid: string;
-  email: string;
-  displayName?: string;
-  photoURL?: string;
-  role: 'dentist' | 'client' | 'admin';
-  onboardingComplete?: boolean;
-  experience?: string;
-  licenses?: string[];
-  availability?: string;
-  interests?: string[];
-}
+import { ApiError, apiRequest, type UserProfile } from '../lib/api';
+import { auth } from '../lib/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  refreshProfile: () => Promise<UserProfile | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   logout: async () => {},
   updateProfile: async () => {},
+  refreshProfile: async () => null,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -39,9 +28,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshProfile = async () => {
+    if (!auth?.currentUser) {
+      setProfile(null);
+      return null;
+    }
+
+    try {
+      const nextProfile = await apiRequest<UserProfile>('/api/auth/profile');
+      setProfile(nextProfile);
+      return nextProfile;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setProfile(null);
+        return null;
+      }
+
+      throw error;
+    }
+  };
+
   useEffect(() => {
-    // If Firebase isn't configured, bypass the auth listener to allow public routes to render
-    if (!auth || !db) {
+    if (!auth) {
       console.warn("Firebase is not initialized. Check your environment variables.");
       setLoading(false);
       return;
@@ -49,18 +57,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      
+
       if (firebaseUser) {
         try {
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          if (userDoc.exists()) {
-            setProfile(userDoc.data() as UserProfile);
-          } else {
-            // New user, profile needs to be created during signup flow
-            setProfile(null);
-          }
+          await refreshProfile();
         } catch (error) {
           console.error("Error fetching user profile:", error);
           setProfile(null);
@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -83,17 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
-    const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, data, { merge: true });
-    
-    const updatedDoc = await getDoc(userDocRef);
-    if (updatedDoc.exists()) {
-      setProfile(updatedDoc.data() as UserProfile);
-    }
+    const updatedProfile = await apiRequest<UserProfile>('/api/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+    setProfile(updatedProfile);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, updateProfile, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

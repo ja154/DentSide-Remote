@@ -20,12 +20,50 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 - **Backend**: Express.js, Node.js
 - **AI**: Google Gemini API (@google/genai)
 
+## Backend Surface
+- `GET /health`: health check with Firebase, storage, Stripe, and M-Pesa configuration flags.
+- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Firebase bearer-token validation.
+- `GET /api/dentists`, `GET /api/dentists/:dentistId`: verified dentist directory for clients and admins.
+- `GET /api/gigs`, `GET /api/gigs/:gigId`, `POST /api/gigs`, `PATCH /api/gigs/:gigId`, `DELETE /api/gigs/:gigId`: backend structure for the gig marketplace collection.
+- `POST /api/verify`, `GET /api/verify/status`: verification request intake with server-side validation.
+- `GET /api/appointments`, `GET /api/appointments/:appointmentId`, `POST /api/appointments`, `PATCH /api/appointments/:appointmentId`: consult request structure with role-based state transitions.
+- `GET /api/withdraw/summary`, `GET /api/withdraw/history`, `POST /api/withdraw`: wallet and payout request structure.
+- `GET /api/notifications`, `PATCH /api/notifications/:notificationId`, `POST /api/notifications/read-all`: in-app notification feed with read tracking.
+- `GET /api/admin/*`, `PATCH /api/admin/verifications/:userId`, `PATCH /api/admin/users/:userId/role`, `PATCH /api/admin/withdrawals/:withdrawalId`: admin audit and moderation routes.
+- `POST /api/webhooks/stripe`: Stripe webhook signature verification scaffold.
+
+## Admin Console
+- Admin users now have a dedicated `/admin` command center for:
+  - overview counts and integration readiness
+  - user role management
+  - verification moderation with approve/reject/pending actions
+  - withdrawal queue decisions
+  - reviews of gigs and appointments
+
+## Frontend Integration Status
+- Client network and appointment screens now use the live `/api/dentists` and `/api/appointments` routes for verified search, consult creation, and client-side cancellation.
+- The dentist dashboard now shows live consult queue actions from `/api/appointments` and live wallet metrics from `/api/withdraw/summary`.
+- The wallet screen can now submit withdrawal requests through `POST /api/withdraw`.
+- A shared in-app notification menu now reads from `/api/notifications`, and appointment/admin actions emit notification records for affected users.
+- The admin command center now includes user role changes and withdrawal queue actions in addition to the earlier verification moderation tools.
+
 ## Setup & Running Locally
 1. Clone the repository.
 2. Run `npm install` to install dependencies.
-3. Create a `.env` file based on `.env.example` and add your `GEMINI_API_KEY` (optional, as the app supports BYOK in the UI).
-4. Run `npm run dev` to start the development server.
-5. Open `http://localhost:3000` in your browser.
+3. Create a `.env` file based on `.env.example`.
+4. Add Firebase web config values so the backend can validate ID tokens and access Firestore through the authenticated user context:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+5. Optional integrations:
+   - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+   - M-Pesa: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`
+6. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
+7. Run `npm run dev` to start the development server.
+8. Open `http://localhost:3000` in your browser.
 
 ## Deployment
 The app is configured to be deployed as a full-stack application.
@@ -37,3 +75,6 @@ The app is configured to be deployed as a full-stack application.
 - API payloads are validated with Zod on the server, including profile shape and BYOK key formatting.
 - Request size limits, rate limiting, and a global error handler reduce abuse and prevent accidental data leakage through raw stack traces.
 - Security headers are enforced with Helmet, including stricter referrer behavior.
+- Firebase-protected routes now require bearer-token validation on the server before profile, verification, gigs, appointments, withdrawals, or admin actions run.
+- Wallet, verification, gigs, and appointment structures now flow through Express routes instead of browser-side Firestore writes.
+- Admin moderation now has a first-party UI instead of API-only routes.
