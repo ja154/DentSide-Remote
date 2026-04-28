@@ -36,7 +36,11 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, 
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && profile && profile.role !== allowedRole) {
+  if (!profile) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRole && profile.role !== allowedRole) {
     return <Navigate to={getDashboardPathForRole(profile.role)} replace />;
   }
 
