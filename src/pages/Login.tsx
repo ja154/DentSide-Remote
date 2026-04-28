@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile, loading: authLoading, profileLoading, refreshProfile } = useAuth();
 
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [pendingRoleSelection, setPendingRoleSelection] = useState(false);
@@ -18,14 +18,14 @@ export default function Login() {
   const [step, setStep] = useState<'login' | 'role_selection'>('login');
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || profileLoading) return;
     if (!user) return;
-    
+
     if (profile) {
       navigate(getDashboardPathForRole(profile.role));
     }
     // Don't auto-trigger role_selection here — it's only shown after explicit Google sign-in
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, profileLoading, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
