@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, initializeFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 
 // Note on Firebase Security:
 // Firebase configuration keys (apiKey, projectId, etc.) are public by design
@@ -25,7 +25,7 @@ export const auth = app ? getAuth(app) : null as any;
 // Use initializeFirestore with experimentalForceLongPolling to bypass strict proxy WebSocket blocks
 export const db = app ? initializeFirestore(app, { 
   experimentalForceLongPolling: true 
-}, firebaseConfig.firestoreDatabaseId) : null as any;
+}, firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' ? firebaseConfig.firestoreDatabaseId : undefined) : null as any;
 
 export const googleProvider = new GoogleAuthProvider();
 

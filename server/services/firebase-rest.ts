@@ -30,7 +30,7 @@ type FirestoreDocument = {
 const identityToolkitBaseUrl = 'https://identitytoolkit.googleapis.com/v1';
 
 const getFirestoreBaseUrl = () => {
-  return `https://firestore.googleapis.com/v1/projects/${env.VITE_FIREBASE_PROJECT_ID}/databases/${encodeURIComponent(env.VITE_FIREBASE_DATABASE_ID)}/documents`;
+  return `https://firestore.googleapis.com/v1/projects/${env.VITE_FIREBASE_PROJECT_ID}/databases/${env.VITE_FIREBASE_DATABASE_ID}/documents`;
 };
 
 const assertFirebaseConfigured = () => {
