@@ -1,6 +1,7 @@
 import { auth } from './firebase';
 
 export type Role = 'dentist' | 'client' | 'admin';
+export type AuthMethod = 'google' | 'email';
 export type VerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 export type GigStatus = 'draft' | 'open' | 'closed';
 export type BookingStatus = 'requested' | 'confirmed' | 'completed' | 'cancelled';
@@ -23,8 +24,10 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   photoURL?: string;
+  authMethod?: AuthMethod;
   role: Role;
   createdAt: string;
+  updatedAt?: string;
   onboardingComplete?: boolean;
   experience?: string;
   licenses?: string[];
@@ -42,6 +45,9 @@ export interface VerificationRecord {
   issuingState: string;
   licenseNumber: string;
   documentName: string;
+  documentPath?: string;
+  documentContentType?: string;
+  documentSizeBytes?: number;
   status: VerificationStatus;
   storageMode: 'bucket' | 'metadata_only';
   reviewNote?: string;
@@ -150,7 +156,6 @@ export interface AdminOverview {
 
 export interface AdminUser extends UserProfile {
   id: string;
-  updatedAt?: string;
 }
 
 export interface VerificationStatusResponse {
@@ -197,6 +202,30 @@ const getAuthToken = async () => {
   return auth.currentUser.getIdToken();
 };
 
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+function normalizeApiBaseUrl(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.endsWith('/') ? trimmed : `${trimmed}/`;
+}
+
+export function resolveApiUrl(input: string) {
+  if (!API_BASE_URL || /^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  const normalizedPath = input.startsWith('/') ? input.slice(1) : input;
+  return new URL(normalizedPath, API_BASE_URL).toString();
+}
+
 export async function apiRequest<T>(input: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const token = await getAuthToken();
@@ -209,7 +238,7 @@ export async function apiRequest<T>(input: string, init: RequestInit = {}): Prom
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(input, {
+  const response = await fetch(resolveApiUrl(input), {
     ...init,
     headers,
   });

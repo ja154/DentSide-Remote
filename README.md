@@ -22,7 +22,7 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 
 ## Backend Surface
 - `GET /health`: health check with Firebase, storage, Stripe, and M-Pesa configuration flags.
-- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Firebase bearer-token validation.
+- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Firebase bearer-token validation, including persisted auth-method metadata for profile onboarding.
 - `GET /api/dentists`, `GET /api/dentists/:dentistId`: verified dentist directory for clients and admins.
 - `GET /api/gigs`, `GET /api/gigs/:gigId`, `POST /api/gigs`, `PATCH /api/gigs/:gigId`, `DELETE /api/gigs/:gigId`: backend structure for the gig marketplace collection.
 - `POST /api/verify`, `GET /api/verify/status`: verification request intake with server-side validation.
@@ -42,10 +42,13 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 
 ## Frontend Integration Status
 - Client network and appointment screens now use the live `/api/dentists` and `/api/appointments` routes for verified search, consult creation, and client-side cancellation.
+- Client and admin users now share a live `/gig-studio` surface for creating, editing, searching, and soft-closing gigs through `/api/gigs`.
 - The dentist dashboard now shows live consult queue actions from `/api/appointments` and live wallet metrics from `/api/withdraw/summary`.
 - The wallet screen can now submit withdrawal requests through `POST /api/withdraw`.
+- The verification flow now uploads real files into Firebase Storage before submitting `/api/verify` when `VITE_FIREBASE_STORAGE_BUCKET` is configured.
 - A shared in-app notification menu now reads from `/api/notifications`, and appointment/admin actions emit notification records for affected users.
 - The admin command center now includes user role changes and withdrawal queue actions in addition to the earlier verification moderation tools.
+- The authentication screen now supports both Google and email/password sign-in, while onboarding uses shared auth state to route authenticated users who still need a profile.
 
 ## Setup & Running Locally
 1. Clone the repository.
@@ -55,21 +58,47 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
    - `VITE_FIREBASE_API_KEY`
    - `VITE_FIREBASE_PROJECT_ID`
    - `VITE_FIREBASE_AUTH_DOMAIN`
-   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_STORAGE_BUCKET` for real verification uploads
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
    - `VITE_FIREBASE_APP_ID`
    - `VITE_FIREBASE_MEASUREMENT_ID` (optional)
-5. Optional integrations:
+5. In Firebase Authentication, enable the providers you plan to use:
+   - Google
+   - Email/Password
+6. Optional integrations:
    - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
    - M-Pesa: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`
-6. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
-7. Run `npm run dev` to start the development server.
-8. Open `http://localhost:3000` in your browser.
+7. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
+8. Run `npm run dev` to start the development server.
+9. Open `http://localhost:3000` in your browser.
+10. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
+11. Deploy both [firestore.rules](/home/jay/Desktop/DentSide-Remote/firestore.rules) and [storage.rules](/home/jay/Desktop/DentSide-Remote/storage.rules) in Firebase if you want the verification upload flow to work end-to-end.
 
 ## Deployment
 The app is configured to be deployed as a full-stack application.
 - Build: `npm run build`
 - Start: `npm start` (runs the Express server serving the built static files)
+
+### Render Backend Deployment
+Use this mode when the React frontend is hosted separately and Render is only serving the Express API.
+
+1. Create a Render Web Service from this repository, or use the included [render.yaml](/home/jay/Desktop/DentSide-Remote/render.yaml) blueprint.
+2. Set the build command to `npm install`.
+3. Set the start command to `npm run start:api`.
+4. Set the health check path to `/health`.
+5. Configure these backend environment variables in Render:
+   - `NODE_ENV=production`
+   - `SERVE_STATIC_FRONTEND=false`
+   - `APP_URL=https://your-render-service.onrender.com`
+   - `ALLOWED_ORIGINS=https://your-frontend-domain.com`
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_DATABASE_ID` if you do not use the default Firestore database
+   - `VITE_FIREBASE_STORAGE_BUCKET` if verification storage is enabled
+   - optional payout keys: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `MPESA_*`
+6. In the frontend deployment, set `VITE_API_BASE_URL=https://your-render-service.onrender.com` so `/api/...` calls target Render instead of the website origin.
+
+When `SERVE_STATIC_FRONTEND=false`, the Render service behaves as an API-only backend and does not require a `dist` build.
 
 ## Security
 - API keys provided via the BYOK interface are only used for the duration of the session and are not stored permanently.
@@ -79,3 +108,4 @@ The app is configured to be deployed as a full-stack application.
 - Firebase-protected routes now require bearer-token validation on the server before profile, verification, gigs, appointments, withdrawals, or admin actions run.
 - Wallet, verification, gigs, and appointment structures now flow through Express routes instead of browser-side Firestore writes.
 - Admin moderation now has a first-party UI instead of API-only routes.
+- Split frontend/backend deployments are supported by `VITE_API_BASE_URL`, CORS allowlists, and an API-only server mode for hosts such as Render.

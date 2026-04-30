@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, LayoutDashboard, LogOut, Menu, Search, X } from 'lucide-react';
+import { Briefcase, Calendar, LayoutDashboard, LogOut, Menu, Search, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
 import NotificationMenu from './NotificationMenu';
@@ -8,6 +8,7 @@ import SiteFooter from './SiteFooter';
 
 const CLIENT_NAV_ITEMS = [
   { label: 'Dashboard', href: '/client-dashboard', icon: LayoutDashboard },
+  { label: 'Gig Studio', href: '/gig-studio', icon: Briefcase },
   { label: 'Find a Dentist', href: '/client/network', icon: Search },
   { label: 'Appointments', href: '/client/appointments', icon: Calendar },
 ];

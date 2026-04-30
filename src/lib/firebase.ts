@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { initializeFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Note on Firebase Security:
 // Firebase configuration keys (apiKey, projectId, etc.) are public by design
@@ -26,6 +27,8 @@ export const auth = app ? getAuth(app) : null as any;
 export const db = app ? initializeFirestore(app, { 
   experimentalForceLongPolling: true 
 }, firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' ? firebaseConfig.firestoreDatabaseId : undefined) : null as any;
+export const storage =
+  app && firebaseConfig.storageBucket ? getStorage(app) : (null as any);
 
 export const googleProvider = new GoogleAuthProvider();
 

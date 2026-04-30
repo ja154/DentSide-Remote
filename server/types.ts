@@ -1,4 +1,5 @@
 export type Role = 'dentist' | 'client' | 'admin';
+export type AuthMethod = 'google' | 'email';
 export type VerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 export type GigStatus = 'draft' | 'open' | 'closed';
 export type BookingStatus = 'requested' | 'confirmed' | 'completed' | 'cancelled';
@@ -29,8 +30,10 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   photoURL?: string;
+  authMethod?: AuthMethod;
   role: Role;
   createdAt: string;
+  updatedAt?: string;
   onboardingComplete: boolean;
   experience?: string;
   licenses?: string[];
@@ -62,6 +65,9 @@ export interface VerificationRecord {
   issuingState: string;
   licenseNumber: string;
   documentName: string;
+  documentPath?: string;
+  documentContentType?: string;
+  documentSizeBytes?: number;
   status: VerificationStatus;
   storageMode: 'bucket' | 'metadata_only';
   reviewNote?: string;

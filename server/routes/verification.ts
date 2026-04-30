@@ -18,7 +18,7 @@ verificationRouter.get(
     const verification = await getOptionalDocument<VerificationRecord>(`verifications/${req.profile!.uid}`, req.firebaseToken!);
 
     res.json({
-      verification,
+      verification: verification ? { id: req.profile!.uid, ...verification } : null,
       storageConfigured: env.storageConfigured,
     });
   }),
@@ -29,6 +29,15 @@ verificationRouter.post(
   requireRole('dentist'),
   asyncHandler(async (req, res) => {
     const payload = VerificationSubmitSchema.parse(req.body);
+
+    if (env.storageConfigured && !payload.documentPath) {
+      throw new AppError(
+        'Verification document upload is required when storage is configured.',
+        400,
+        'bad_request',
+      );
+    }
+
     const timestamp = new Date().toISOString();
 
     const verification: VerificationRecord = {
@@ -39,8 +48,11 @@ verificationRouter.post(
       issuingState: payload.issuingState,
       licenseNumber: payload.licenseNumber,
       documentName: payload.documentName,
+      documentPath: payload.documentPath,
+      documentContentType: payload.documentContentType,
+      documentSizeBytes: payload.documentSizeBytes,
       status: 'pending',
-      storageMode: env.storageConfigured ? 'bucket' : 'metadata_only',
+      storageMode: env.storageConfigured && payload.documentPath ? 'bucket' : 'metadata_only',
       submittedAt: timestamp,
       updatedAt: timestamp,
     };
@@ -52,13 +64,14 @@ verificationRouter.post(
         displayName: payload.legalName,
         onboardingComplete: true,
         verificationStatus: 'pending',
+        updatedAt: timestamp,
       },
       req.firebaseToken!,
       { merge: true },
     );
 
     res.status(201).json({
-      verification,
+      verification: { id: req.profile!.uid, ...verification },
       storageConfigured: env.storageConfigured,
       message: env.storageConfigured
         ? 'Verification submitted successfully.'

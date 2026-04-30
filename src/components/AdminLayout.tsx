@@ -99,6 +99,17 @@ export default function AdminLayout({
           </div>
 
           <div className="ds-sidebar-section">
+            <Link
+              to="/gig-studio"
+              className={`ds-nav-item${location.pathname === '/gig-studio' ? ' active' : ''}`}
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <Briefcase size={16} className="nav-icon" />
+              Gig Studio
+            </Link>
+          </div>
+
+          <div className="ds-sidebar-section">
             <Link to="/" className="ds-nav-item" onClick={() => setIsSidebarOpen(false)}>
               <Shield size={16} className="nav-icon" />
               Public Site

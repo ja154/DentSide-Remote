@@ -17,16 +17,19 @@ authRouter.post(
       throw new AppError('Authentication context is not available.', 401, 'unauthorized');
     }
 
-    const { role } = AuthProfileCreateSchema.parse(req.body);
+    const { role, displayName, authMethod } = AuthProfileCreateSchema.parse(req.body);
     const existingProfile = await getOptionalDocument<UserProfile>(`users/${req.firebaseUser.uid}`, req.firebaseToken);
+    const timestamp = new Date().toISOString();
 
     const profile: UserProfile = {
       uid: req.firebaseUser.uid,
       email: req.firebaseUser.email,
-      displayName: req.firebaseUser.displayName,
-      photoURL: req.firebaseUser.photoURL,
+      displayName: existingProfile?.displayName || displayName || req.firebaseUser.displayName,
+      photoURL: req.firebaseUser.photoURL || existingProfile?.photoURL,
+      authMethod: existingProfile?.authMethod || authMethod,
       role: existingProfile?.role || role,
-      createdAt: existingProfile?.createdAt || new Date().toISOString(),
+      createdAt: existingProfile?.createdAt || timestamp,
+      updatedAt: timestamp,
       onboardingComplete: existingProfile?.onboardingComplete ?? false,
       experience: existingProfile?.experience,
       licenses: existingProfile?.licenses,
@@ -58,12 +61,19 @@ authRouter.patch(
     }
 
     const patch = UserProfilePatchSchema.parse(req.body);
+    const timestamp = new Date().toISOString();
     const nextProfile: UserProfile = {
       ...req.profile,
       ...patch,
+      updatedAt: timestamp,
     };
 
-    await setDocument(`users/${req.firebaseUser.uid}`, patch, req.firebaseToken, { merge: true });
+    await setDocument(
+      `users/${req.firebaseUser.uid}`,
+      { ...patch, updatedAt: timestamp },
+      req.firebaseToken,
+      { merge: true },
+    );
     res.json(nextProfile);
   }),
 );

@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: dentside-remote-api
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm run start:api
+    healthCheckPath: /health

@@ -1,0 +1,199 @@
+"""
+Canonical application data model for DentSide Remote.
+
+Notes:
+- Firestore stores date/time values as ISO 8601 strings in the current app.
+- Collection document ids are path-level identifiers and are usually not stored as fields.
+- Verification files live in Firebase Storage, while verification metadata lives in Firestore.
+"""
+
+scalar ISODateTimeString
+
+enum Role {
+  dentist
+  client
+  admin
+}
+
+enum AuthMethod {
+  google
+  email
+}
+
+enum VerificationStatus {
+  unverified
+  pending
+  approved
+  rejected
+}
+
+enum GigStatus {
+  draft
+  open
+  closed
+}
+
+enum BookingStatus {
+  requested
+  confirmed
+  completed
+  cancelled
+}
+
+enum WithdrawalProvider {
+  stripe
+  mpesa
+}
+
+enum WithdrawalStatus {
+  pending_provider_setup
+  queued
+  paid
+  failed
+}
+
+enum NotificationType {
+  verification_approved
+  verification_rejected
+  appointment_confirmed
+  appointment_cancelled
+  appointment_completed
+  new_appointment_request
+  gig_posted
+  withdrawal_paid
+  withdrawal_failed
+  system
+}
+
+enum VerificationStorageMode {
+  bucket
+  metadata_only
+}
+
+"""
+Firestore collection: users
+Document id strategy: users/{uid}
+"""
+type User @table {
+  uid: String!
+  email: String!
+  role: Role!
+  createdAt: ISODateTimeString!
+  onboardingComplete: Boolean!
+  displayName: String
+  photoURL: String
+  authMethod: AuthMethod
+  experience: String
+  licenses: [String!]
+  availability: String
+  interests: [String!]
+  verificationStatus: VerificationStatus
+  updatedAt: ISODateTimeString
+}
+
+"""
+Firestore collection: gigs
+Document id strategy: gigs/{gigId}
+`createdBy` stores the creator uid from users/{uid}.
+"""
+type Gig @table {
+  title: String!
+  company: String!
+  type: String!
+  rateLabel: String!
+  remoteOnly: Boolean!
+  status: GigStatus!
+  createdBy: String!
+  createdByRole: Role!
+  createdAt: ISODateTimeString!
+  updatedAt: ISODateTimeString!
+  description: String
+  tags: [String!]!
+}
+
+"""
+Firestore collection: verifications
+Document id strategy: verifications/{userId}
+`userId` stores the owner uid from users/{uid}.
+"""
+type Verification @table {
+  userId: String!
+  legalName: String!
+  email: String!
+  clinic: String!
+  issuingState: String!
+  licenseNumber: String!
+  documentName: String!
+  status: VerificationStatus!
+  storageMode: VerificationStorageMode!
+  submittedAt: ISODateTimeString!
+  updatedAt: ISODateTimeString!
+  documentPath: String
+  documentContentType: String
+  documentSizeBytes: Int
+  reviewNote: String
+}
+
+"""
+Firestore collection: bookings
+Document id strategy: bookings/{bookingId}
+`clientId` and `dentistId` store user uids.
+"""
+type Booking @table {
+  clientId: String!
+  clientName: String!
+  reason: String!
+  status: BookingStatus!
+  createdAt: ISODateTimeString!
+  updatedAt: ISODateTimeString!
+  dentistId: String
+  dentistName: String
+  scheduledFor: ISODateTimeString
+}
+
+"""
+Firestore collection: withdrawals
+Document id strategy: withdrawals/{withdrawalId}
+`userId` stores the owner uid from users/{uid}.
+"""
+type Withdrawal @table {
+  userId: String!
+  email: String!
+  amount: Float!
+  currency: String!
+  provider: WithdrawalProvider!
+  destinationLabel: String!
+  status: WithdrawalStatus!
+  createdAt: ISODateTimeString!
+  updatedAt: ISODateTimeString!
+}
+
+"""
+Firestore collection: notifications
+Document id strategy: notifications/{notificationId}
+`userId` stores the target uid from users/{uid}.
+`relatedId` may point to a gig, booking, verification, or withdrawal document id.
+"""
+type Notification @table {
+  userId: String!
+  type: NotificationType!
+  title: String!
+  body: String!
+  read: Boolean!
+  createdAt: ISODateTimeString!
+  updatedAt: ISODateTimeString!
+  relatedId: String
+}
+
+"""
+Derived API model, not stored as its own collection.
+Built from withdrawals plus provider configuration flags.
+"""
+type WalletSummary {
+  availableBalance: Float!
+  pendingBalance: Float!
+  lifetimeWithdrawn: Float!
+  defaultCurrency: String!
+  stripeConfigured: Boolean!
+  mpesaConfigured: Boolean!
+}

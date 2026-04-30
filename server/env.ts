@@ -6,6 +6,10 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().max(65535).default(3000),
   APP_URL: z.string().url().optional(),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://127.0.0.1:3000'),
+  SERVE_STATIC_FRONTEND: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
   VITE_FIREBASE_API_KEY: z.string().optional(),
   VITE_FIREBASE_PROJECT_ID: z.string().optional(),
   VITE_FIREBASE_DATABASE_ID: z.string().default('(default)'),
@@ -33,6 +37,7 @@ export const env = {
   allowedOrigins: parsedEnv.ALLOWED_ORIGINS.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
+  serveStaticFrontend: parsedEnv.SERVE_STATIC_FRONTEND,
   firebaseConfigured: Boolean(parsedEnv.VITE_FIREBASE_API_KEY && parsedEnv.VITE_FIREBASE_PROJECT_ID),
   storageConfigured: Boolean(parsedEnv.VITE_FIREBASE_STORAGE_BUCKET),
   stripeConfigured: Boolean(parsedEnv.STRIPE_SECRET_KEY && parsedEnv.STRIPE_WEBHOOK_SECRET),
