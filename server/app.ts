@@ -49,7 +49,7 @@ export async function createApp() {
       contentSecurityPolicy: env.NODE_ENV === 'production' ? {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
+          scriptSrc: ["'self'", "https://apis.google.com"],
           connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://*.googleusercontent.com"],
           imgSrc: ["'self'", "data:", "https://*.googleusercontent.com"],
           styleSrc: ["'self'", "'unsafe-inline'"],
