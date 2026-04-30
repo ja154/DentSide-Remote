@@ -24,6 +24,7 @@ Fields:
 - `onboardingComplete: boolean`
 - `displayName?: string`
 - `photoURL?: string`
+- `authMethod?: 'google' | 'email'`
 - `experience?: string`
 - `licenses?: string[]`
 - `availability?: string`
@@ -33,7 +34,8 @@ Fields:
 
 Notes:
 - Document id is the same as `uid`.
-- `updatedAt` is written by the admin role-update path and should be treated as optional until all user writes standardize on it.
+- `authMethod` records whether the profile was initialized from Google auth or email/password auth.
+- `updatedAt` is optional for older documents, but current profile creation and update paths now write it.
 
 ### `gigs/{gigId}`
 

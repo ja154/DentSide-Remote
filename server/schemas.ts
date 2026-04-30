@@ -28,8 +28,12 @@ export const ExpectedAISchema = z.array(
   }),
 );
 
+export const AuthMethodSchema = z.enum(['google', 'email']);
+
 export const AuthProfileCreateSchema = z.object({
   role: z.enum(['dentist', 'client']),
+  displayName: z.string().trim().min(2).max(100).optional(),
+  authMethod: AuthMethodSchema.optional(),
 });
 
 export const UserProfilePatchSchema = ProfileSchema.extend({

@@ -1,6 +1,7 @@
 import { auth } from './firebase';
 
 export type Role = 'dentist' | 'client' | 'admin';
+export type AuthMethod = 'google' | 'email';
 export type VerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 export type GigStatus = 'draft' | 'open' | 'closed';
 export type BookingStatus = 'requested' | 'confirmed' | 'completed' | 'cancelled';
@@ -23,8 +24,10 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   photoURL?: string;
+  authMethod?: AuthMethod;
   role: Role;
   createdAt: string;
+  updatedAt?: string;
   onboardingComplete?: boolean;
   experience?: string;
   licenses?: string[];
@@ -153,7 +156,6 @@ export interface AdminOverview {
 
 export interface AdminUser extends UserProfile {
   id: string;
-  updatedAt?: string;
 }
 
 export interface VerificationStatusResponse {

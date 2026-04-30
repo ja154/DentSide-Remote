@@ -60,13 +60,19 @@ function ProtectedRoute({
 
 function AppRoutes() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, loading, profileLoading, needsProfileSetup } = useAuth();
   
   return (
     <Routes>
       <Route path="/" element={
-        user && profile ? (
+        loading || profileLoading ? (
+          <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+          </div>
+        ) : user && profile ? (
           <Navigate to={getDashboardPathForRole(profile.role)} replace />
+        ) : user && needsProfileSetup ? (
+          <Navigate to="/login" replace />
         ) : (
           <LandingPage onGetStarted={() => navigate('/login')} />
         )

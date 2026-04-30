@@ -64,6 +64,7 @@ verificationRouter.post(
         displayName: payload.legalName,
         onboardingComplete: true,
         verificationStatus: 'pending',
+        updatedAt: timestamp,
       },
       req.firebaseToken!,
       { merge: true },

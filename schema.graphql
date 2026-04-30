@@ -15,6 +15,11 @@ enum Role {
   admin
 }
 
+enum AuthMethod {
+  google
+  email
+}
+
 enum VerificationStatus {
   unverified
   pending
@@ -77,6 +82,7 @@ type User @table {
   onboardingComplete: Boolean!
   displayName: String
   photoURL: String
+  authMethod: AuthMethod
   experience: String
   licenses: [String!]
   availability: String

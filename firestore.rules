@@ -59,6 +59,10 @@ service cloud.firestore {
       return role in ['dentist', 'client', 'admin'];
     }
 
+    function isValidAuthMethod(method) {
+      return method in ['google', 'email'];
+    }
+
     function isValidVerificationStatus(status) {
       return status in ['unverified', 'pending', 'approved', 'rejected'];
     }
@@ -90,8 +94,10 @@ service cloud.firestore {
           'email',
           'displayName',
           'photoURL',
+          'authMethod',
           'role',
           'createdAt',
+          'updatedAt',
           'onboardingComplete',
           'experience',
           'licenses',
@@ -107,6 +113,8 @@ service cloud.firestore {
         data.onboardingComplete is bool &&
         isOptionalString(data, 'displayName', 100) &&
         isOptionalString(data, 'photoURL', 2048) &&
+        (!('authMethod' in data) || isValidAuthMethod(data.authMethod)) &&
+        isOptionalTimestampString(data, 'updatedAt') &&
         isOptionalString(data, 'experience', 100) &&
         isOptionalStringList(data, 'licenses', 20) &&
         isOptionalString(data, 'availability', 100) &&

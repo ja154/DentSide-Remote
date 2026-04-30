@@ -20,6 +20,7 @@
 - Verified dentist search, consult requests, withdrawal requests, and admin role/payout actions are now connected to the live Express API from the frontend.
 - The backend can now run in API-only production mode for Render, while separately hosted frontends can target it through `VITE_API_BASE_URL`.
 - Client and admin users now have a shared gig studio for end-to-end marketplace CRUD on top of `/api/gigs`.
+- Authentication now supports both Google and email/password sign-in, with profile setup driven from shared auth state whenever an authenticated user does not yet have a `users/{uid}` record.
 
 ## 🟡 PHASE 2 — Teledentistry Layer (3–6 months)
 **Focus:** Second opinions, Treatment planning (No prescriptions initially to avoid legal risk).

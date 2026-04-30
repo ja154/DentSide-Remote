@@ -22,7 +22,7 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 
 ## Backend Surface
 - `GET /health`: health check with Firebase, storage, Stripe, and M-Pesa configuration flags.
-- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Firebase bearer-token validation.
+- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Firebase bearer-token validation, including persisted auth-method metadata for profile onboarding.
 - `GET /api/dentists`, `GET /api/dentists/:dentistId`: verified dentist directory for clients and admins.
 - `GET /api/gigs`, `GET /api/gigs/:gigId`, `POST /api/gigs`, `PATCH /api/gigs/:gigId`, `DELETE /api/gigs/:gigId`: backend structure for the gig marketplace collection.
 - `POST /api/verify`, `GET /api/verify/status`: verification request intake with server-side validation.
@@ -48,6 +48,7 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 - The verification flow now uploads real files into Firebase Storage before submitting `/api/verify` when `VITE_FIREBASE_STORAGE_BUCKET` is configured.
 - A shared in-app notification menu now reads from `/api/notifications`, and appointment/admin actions emit notification records for affected users.
 - The admin command center now includes user role changes and withdrawal queue actions in addition to the earlier verification moderation tools.
+- The authentication screen now supports both Google and email/password sign-in, while onboarding uses shared auth state to route authenticated users who still need a profile.
 
 ## Setup & Running Locally
 1. Clone the repository.
@@ -61,14 +62,17 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
    - `VITE_FIREBASE_APP_ID`
    - `VITE_FIREBASE_MEASUREMENT_ID` (optional)
-5. Optional integrations:
+5. In Firebase Authentication, enable the providers you plan to use:
+   - Google
+   - Email/Password
+6. Optional integrations:
    - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
    - M-Pesa: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`
-6. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
-7. Run `npm run dev` to start the development server.
-8. Open `http://localhost:3000` in your browser.
-9. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
-10. Deploy both [firestore.rules](/home/jay/Desktop/DentSide-Remote/firestore.rules) and [storage.rules](/home/jay/Desktop/DentSide-Remote/storage.rules) in Firebase if you want the verification upload flow to work end-to-end.
+7. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
+8. Run `npm run dev` to start the development server.
+9. Open `http://localhost:3000` in your browser.
+10. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
+11. Deploy both [firestore.rules](/home/jay/Desktop/DentSide-Remote/firestore.rules) and [storage.rules](/home/jay/Desktop/DentSide-Remote/storage.rules) in Firebase if you want the verification upload flow to work end-to-end.
 
 ## Deployment
 The app is configured to be deployed as a full-stack application.
