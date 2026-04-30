@@ -62,6 +62,9 @@ export interface VerificationRecord {
   issuingState: string;
   licenseNumber: string;
   documentName: string;
+  documentPath?: string;
+  documentContentType?: string;
+  documentSizeBytes?: number;
   status: VerificationStatus;
   storageMode: 'bucket' | 'metadata_only';
   reviewNote?: string;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { Search, Calendar, ArrowRight } from 'lucide-react';
+import { Search, Calendar, ArrowRight, Briefcase } from 'lucide-react';
 import ClientLayout from '../components/ClientLayout';
 
 export default function ClientDashboard() {
@@ -22,7 +22,28 @@ export default function ClientDashboard() {
         </div>
 
         {/* Action Cards */}
-        <div className="ds-grid-2" style={{ marginBottom: 40 }}>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" style={{ marginBottom: 40 }}>
+          <Link
+            to="/gig-studio"
+            className="ds-card no-underline p-7 transition-shadow hover:shadow-[0_8px_24px_rgba(13,122,107,0.10)] focus:outline-none focus:ring-2 focus:ring-[rgba(13,122,107,0.25)]"
+          >
+            <div
+              className="ds-feature-icon"
+              style={{ marginBottom: 16, background: 'var(--color-teal-light)' }}
+            >
+              <Briefcase size={20} color="var(--color-teal)" />
+            </div>
+            <h2 className="text-[18px] font-semibold text-[var(--color-ink)] mb-2">
+              Post a Gig
+            </h2>
+            <p className="text-[13px] text-[var(--color-ink-4)] leading-relaxed mb-5">
+              Create, edit, and close listings for remote dental work using the live gig marketplace API.
+            </p>
+            <div className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-teal)] font-semibold">
+              Open Gig Studio <ArrowRight size={13} />
+            </div>
+          </Link>
+
           {/* Find a Dentist */}
           <Link
             to="/client/network"

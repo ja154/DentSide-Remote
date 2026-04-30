@@ -74,6 +74,9 @@ export const VerificationSubmitSchema = z.object({
   issuingState: z.string().trim().min(2).max(80),
   licenseNumber: z.string().trim().min(6).max(80),
   documentName: z.string().trim().min(3).max(255),
+  documentPath: z.string().trim().min(3).max(512).optional(),
+  documentContentType: z.string().trim().min(3).max(120).optional(),
+  documentSizeBytes: z.coerce.number().int().positive().max(10 * 1024 * 1024).optional(),
   hasSelfieCheck: z.literal(true),
   hasDisclosureConsent: z.literal(true),
 });

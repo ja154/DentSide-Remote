@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   BadgeCheck,
@@ -554,6 +555,9 @@ export default function AdminDashboard() {
                                 <span style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
                                   {verification.documentName}
                                 </span>
+                                <span style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
+                                  {verification.storageMode === 'bucket' ? 'Stored in bucket' : 'Metadata only'}
+                                </span>
                               </div>
                             </td>
                             <td>
@@ -628,6 +632,11 @@ export default function AdminDashboard() {
               title="Gig Marketplace"
               subtitle="Review the current supply side of the marketplace and who created each listing."
             >
+              <div className="mb-4 flex justify-end">
+                <Link to="/gig-studio" className="ds-btn ds-btn-ghost ds-btn-sm no-underline">
+                  Open Gig Studio
+                </Link>
+              </div>
               {gigs.length === 0 ? (
                 <EmptyAdminState message="No gigs have been created yet." />
               ) : (

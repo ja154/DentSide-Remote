@@ -42,8 +42,10 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 
 ## Frontend Integration Status
 - Client network and appointment screens now use the live `/api/dentists` and `/api/appointments` routes for verified search, consult creation, and client-side cancellation.
+- Client and admin users now share a live `/gig-studio` surface for creating, editing, searching, and soft-closing gigs through `/api/gigs`.
 - The dentist dashboard now shows live consult queue actions from `/api/appointments` and live wallet metrics from `/api/withdraw/summary`.
 - The wallet screen can now submit withdrawal requests through `POST /api/withdraw`.
+- The verification flow now uploads real files into Firebase Storage before submitting `/api/verify` when `VITE_FIREBASE_STORAGE_BUCKET` is configured.
 - A shared in-app notification menu now reads from `/api/notifications`, and appointment/admin actions emit notification records for affected users.
 - The admin command center now includes user role changes and withdrawal queue actions in addition to the earlier verification moderation tools.
 
@@ -55,7 +57,7 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
    - `VITE_FIREBASE_API_KEY`
    - `VITE_FIREBASE_PROJECT_ID`
    - `VITE_FIREBASE_AUTH_DOMAIN`
-   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_STORAGE_BUCKET` for real verification uploads
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
    - `VITE_FIREBASE_APP_ID`
    - `VITE_FIREBASE_MEASUREMENT_ID` (optional)
@@ -66,6 +68,7 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 7. Run `npm run dev` to start the development server.
 8. Open `http://localhost:3000` in your browser.
 9. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
+10. Deploy both [firestore.rules](/home/jay/Desktop/DentSide-Remote/firestore.rules) and [storage.rules](/home/jay/Desktop/DentSide-Remote/storage.rules) in Firebase if you want the verification upload flow to work end-to-end.
 
 ## Deployment
 The app is configured to be deployed as a full-stack application.
