@@ -22,9 +22,9 @@ import Terms from './pages/Terms';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, allowedRole?: 'dentist' | 'client' | 'admin' }) {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, profileLoading } = useAuth();
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
@@ -36,7 +36,11 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, 
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && profile && profile.role !== allowedRole) {
+  if (!profile) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRole && profile.role !== allowedRole) {
     return <Navigate to={getDashboardPathForRole(profile.role)} replace />;
   }
 

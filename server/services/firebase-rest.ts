@@ -30,7 +30,7 @@ type FirestoreDocument = {
 const identityToolkitBaseUrl = 'https://identitytoolkit.googleapis.com/v1';
 
 const getFirestoreBaseUrl = () => {
-  return `https://firestore.googleapis.com/v1/projects/${env.VITE_FIREBASE_PROJECT_ID}/databases/${encodeURIComponent(env.VITE_FIREBASE_DATABASE_ID)}/documents`;
+  return `https://firestore.googleapis.com/v1/projects/${env.VITE_FIREBASE_PROJECT_ID}/databases/${env.VITE_FIREBASE_DATABASE_ID}/documents`;
 };
 
 const assertFirebaseConfigured = () => {
@@ -176,7 +176,32 @@ const buildDocumentUrl = (documentPath: string, searchParams?: URLSearchParams) 
   return searchParams ? `${url}?${searchParams.toString()}` : url;
 };
 
+type TokenCacheEntry = {
+  identity: FirebaseIdentity;
+  expiresAt: number;
+};
+
+const tokenCache = new Map<string, TokenCacheEntry>();
+const TOKEN_CACHE_TTL_MS = 55 * 60 * 1000;
+const TOKEN_CACHE_MAX_ENTRIES = 200;
+
+const cacheTokenIdentity = (token: string, identity: FirebaseIdentity) => {
+  if (tokenCache.size >= TOKEN_CACHE_MAX_ENTRIES) {
+    const firstKey = tokenCache.keys().next().value;
+    if (firstKey) tokenCache.delete(firstKey);
+  }
+
+  tokenCache.set(token, {
+    identity,
+    expiresAt: Date.now() + TOKEN_CACHE_TTL_MS,
+  });
+};
+
 export const validateFirebaseIdToken = async (idToken: string): Promise<FirebaseIdentity> => {
+  const cached = tokenCache.get(idToken);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.identity;
+  }
   assertFirebaseConfigured();
 
   const payload = await requestJson<{
@@ -199,13 +224,16 @@ export const validateFirebaseIdToken = async (idToken: string): Promise<Firebase
     throw new AppError('Invalid Firebase ID token.', 401, 'unauthorized');
   }
 
-  return {
+  const identity = {
     uid: user.localId,
     email: user.email,
     displayName: user.displayName,
     photoURL: user.photoUrl,
     emailVerified: Boolean(user.emailVerified),
   };
+
+  cacheTokenIdentity(idToken, identity);
+  return identity;
 };
 
 export const getDocument = async <T>(documentPath: string, idToken: string): Promise<T> => {

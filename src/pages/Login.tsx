@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, profileLoading, refreshProfile } = useAuth();
 
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [pendingRoleSelection, setPendingRoleSelection] = useState(false);
@@ -18,14 +18,14 @@ export default function Login() {
   const [step, setStep] = useState<'login' | 'role_selection'>('login');
 
   useEffect(() => {
-    if (!authLoading && user) {
-      if (profile) {
-        navigate(getDashboardPathForRole(profile.role));
-      } else if (!isSigningIn && !pendingRoleSelection) {
-        setStep('role_selection');
-      }
+    if (authLoading || profileLoading) return;
+    if (!user) return;
+
+    if (profile) {
+      navigate(getDashboardPathForRole(profile.role));
     }
-  }, [user, profile, authLoading, isSigningIn, pendingRoleSelection, navigate]);
+    // Don't auto-trigger role_selection here — it's only shown after explicit Google sign-in
+  }, [user, profile, authLoading, profileLoading, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
@@ -59,6 +59,7 @@ export default function Login() {
         method: 'POST',
         body: JSON.stringify({ role }),
       });
+      await refreshProfile();
       navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
     } catch (err: any) {
       console.error(err);
