@@ -1,5 +1,47 @@
-import 'dotenv/config';
+import fs from 'node:fs';
+import path from 'node:path';
+import { parse } from 'dotenv';
 import { z } from 'zod';
+
+const lockedEnvKeys = new Set(Object.keys(process.env));
+
+const mergeEnvFile = (relativePath: string) => {
+  const absolutePath = path.resolve(process.cwd(), relativePath);
+  if (!fs.existsSync(absolutePath)) {
+    return;
+  }
+
+  const parsedFile = parse(fs.readFileSync(absolutePath, 'utf8'));
+
+  for (const [key, value] of Object.entries(parsedFile)) {
+    if (value === '') {
+      continue;
+    }
+
+    if (lockedEnvKeys.has(key)) {
+      continue;
+    }
+
+    process.env[key] = value;
+  }
+};
+
+// Frontend-safe root env files remain available as a fallback, while backend-specific
+// files under server/ take precedence for Express configuration.
+for (const envFile of ['.env', '.env.local', 'server/.env', 'server/.env.local']) {
+  mergeEnvFile(envFile);
+}
+
+const envMode = process.env.NODE_ENV?.trim() || 'development';
+
+for (const envFile of [
+  `.env.${envMode}`,
+  `.env.${envMode}.local`,
+  `server/.env.${envMode}`,
+  `server/.env.${envMode}.local`,
+]) {
+  mergeEnvFile(envFile);
+}
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
