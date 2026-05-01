@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import { AppError } from '../errors.ts';
-import { getOptionalDocument, listDocuments, setDocument } from '../services/firebase-rest.ts';
+import { getOptionalDocument, listDocuments, setDocument } from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth } from '../middleware/auth.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { NotificationRecord } from '../types.ts';
@@ -27,7 +27,7 @@ notificationsRouter.get(
 
     const documents = await listDocuments<NotificationRecord>(
       'notifications',
-      req.firebaseToken!,
+      req.authToken!,
       { pageSize: 50 },
     );
 
@@ -57,7 +57,7 @@ notificationsRouter.patch(
 
     const existing = await getOptionalDocument<NotificationRecord>(
       `notifications/${notificationId}`,
-      req.firebaseToken!,
+      req.authToken!,
     );
 
     if (!existing) {
@@ -74,7 +74,7 @@ notificationsRouter.patch(
     await setDocument(
       `notifications/${notificationId}`,
       { read: patch.read, updatedAt: timestamp },
-      req.firebaseToken!,
+      req.authToken!,
       { merge: true },
     );
 
@@ -94,7 +94,7 @@ notificationsRouter.post(
 
     const documents = await listDocuments<NotificationRecord>(
       'notifications',
-      req.firebaseToken!,
+      req.authToken!,
       { pageSize: 50 },
     );
 
@@ -106,7 +106,7 @@ notificationsRouter.post(
         setDocument(
           `notifications/${n.id}`,
           { read: true, updatedAt: timestamp },
-          req.firebaseToken!,
+          req.authToken!,
           { merge: true },
         ).catch(() => null), // best-effort; don't fail the whole request
       ),

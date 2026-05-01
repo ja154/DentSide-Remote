@@ -7,7 +7,7 @@ import {
   getOptionalDocument,
   listDocuments,
   setDocument,
-} from '../services/firebase-rest.ts';
+} from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth, requireRole } from '../middleware/auth.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { GigRecord, WithId } from '../types.ts';
@@ -24,7 +24,7 @@ gigsRouter.use(requireAuth, loadUserProfile, ensureProfile);
 gigsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const documents = await listDocuments<GigRecord>('gigs', req.firebaseToken!, {
+    const documents = await listDocuments<GigRecord>('gigs', req.authToken!, {
       pageSize: 100,
       orderBy: 'updatedAt desc',
     });
@@ -71,7 +71,7 @@ gigsRouter.get(
     const uid = req.profile!.uid;
     const isAdmin = req.profile!.role === 'admin';
 
-    const gig = await getOptionalDocument<GigRecord>(`gigs/${gigId}`, req.firebaseToken!);
+    const gig = await getOptionalDocument<GigRecord>(`gigs/${gigId}`, req.authToken!);
 
     if (!gig) {
       throw new AppError('Gig not found.', 404, 'not_found');
@@ -106,7 +106,7 @@ gigsRouter.post(
       updatedAt: timestamp,
     };
 
-    await setDocument(`gigs/${documentId}`, gig, req.firebaseToken!);
+    await setDocument(`gigs/${documentId}`, gig, req.authToken!);
     res.status(201).json({ id: documentId, ...gig });
   }),
 );
@@ -123,7 +123,7 @@ gigsRouter.patch(
     const uid = req.profile!.uid;
     const isAdmin = req.profile!.role === 'admin';
 
-    const existing = await getOptionalDocument<GigRecord>(`gigs/${gigId}`, req.firebaseToken!);
+    const existing = await getOptionalDocument<GigRecord>(`gigs/${gigId}`, req.authToken!);
 
     if (!existing) {
       throw new AppError('Gig not found.', 404, 'not_found');
@@ -137,7 +137,7 @@ gigsRouter.patch(
     const timestamp = new Date().toISOString();
     const updatePayload = { ...patch, updatedAt: timestamp };
 
-    await setDocument(`gigs/${gigId}`, updatePayload, req.firebaseToken!, { merge: true });
+    await setDocument(`gigs/${gigId}`, updatePayload, req.authToken!, { merge: true });
     res.json({ id: gigId, ...existing, ...updatePayload });
   }),
 );
@@ -154,7 +154,7 @@ gigsRouter.delete(
     const uid = req.profile!.uid;
     const isAdmin = req.profile!.role === 'admin';
 
-    const existing = await getOptionalDocument<GigRecord>(`gigs/${gigId}`, req.firebaseToken!);
+    const existing = await getOptionalDocument<GigRecord>(`gigs/${gigId}`, req.authToken!);
 
     if (!existing) {
       throw new AppError('Gig not found.', 404, 'not_found');
@@ -168,7 +168,7 @@ gigsRouter.delete(
     await setDocument(
       `gigs/${gigId}`,
       { status: 'closed', updatedAt: timestamp },
-      req.firebaseToken!,
+      req.authToken!,
       { merge: true },
     );
 

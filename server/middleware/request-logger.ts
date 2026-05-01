@@ -15,7 +15,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
         path: req.originalUrl,
         statusCode: res.statusCode,
         durationMs,
-        userId: req.firebaseUser?.uid || null,
+        userId: req.authUser?.uid || null,
       }),
     );
   });

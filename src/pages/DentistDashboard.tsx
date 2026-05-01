@@ -23,6 +23,10 @@ type AppointmentActionState = {
 export default function DentistDashboard() {
   const { profile } = useAuth();
   const location = useLocation();
+  const firstName =
+    typeof profile?.displayName === 'string' && profile.displayName.trim()
+      ? profile.displayName.trim().split(/\s+/)[0]
+      : 'Dr.';
 
   const [apiKey, setApiKey] = useState('');
   const [isMatching, setIsMatching] = useState(false);
@@ -194,7 +198,7 @@ export default function DentistDashboard() {
         <div className="ds-page-header">
           <p className="ds-page-eyebrow">Clinical Workspace</p>
           <h1 className="ds-page-title">
-            Welcome back, {profile?.displayName?.split(' ')[0] || 'Dr.'}
+            Welcome back, {firstName}
           </h1>
           <p className="ds-page-subtitle">
             {activeAppointments.length > 0

@@ -6,7 +6,7 @@ import {
   getOptionalDocument,
   listDocuments,
   setDocument,
-} from '../services/firebase-rest.ts';
+} from '../services/data-provider.ts';
 import {
   ensureProfile,
   loadUserProfile,
@@ -34,11 +34,11 @@ adminRouter.get(
   '/overview',
   asyncHandler(async (req, res) => {
     const [users, gigs, verifications, bookings, withdrawals] = await Promise.all([
-      listDocuments<UserProfile>('users', req.firebaseToken!, { pageSize: 200 }),
-      listDocuments<GigRecord>('gigs', req.firebaseToken!, { pageSize: 200 }),
-      listDocuments<VerificationRecord>('verifications', req.firebaseToken!, { pageSize: 200 }),
-      listDocuments<AppointmentRecord>('bookings', req.firebaseToken!, { pageSize: 200 }),
-      listDocuments<WithdrawalRecord>('withdrawals', req.firebaseToken!, { pageSize: 200 }),
+      listDocuments<UserProfile>('users', req.authToken!, { pageSize: 200 }),
+      listDocuments<GigRecord>('gigs', req.authToken!, { pageSize: 200 }),
+      listDocuments<VerificationRecord>('verifications', req.authToken!, { pageSize: 200 }),
+      listDocuments<AppointmentRecord>('bookings', req.authToken!, { pageSize: 200 }),
+      listDocuments<WithdrawalRecord>('withdrawals', req.authToken!, { pageSize: 200 }),
     ]);
 
     res.json({
@@ -50,10 +50,15 @@ adminRouter.get(
         withdrawals: withdrawals.length,
       },
       integrations: {
-        firebase: env.firebaseConfigured,
+        supabase: env.supabaseConfigured,
         storage: env.storageConfigured,
         stripe: env.stripeConfigured,
         mpesa: env.mpesaConfigured,
+      },
+      providers: {
+        auth: 'supabase',
+        data: 'supabase',
+        storage: env.storageProvider,
       },
     });
   }),
@@ -68,7 +73,7 @@ adminRouter.get(
 adminRouter.get(
   '/users',
   asyncHandler(async (req, res) => {
-    const users = await listDocuments<UserProfile>('users', req.firebaseToken!, {
+    const users = await listDocuments<UserProfile>('users', req.authToken!, {
       pageSize: 200,
     });
 
@@ -108,7 +113,7 @@ adminRouter.patch(
     const payload = AdminUserRolePatchSchema.parse(req.body);
     const existing = await getOptionalDocument<UserProfile>(
       `users/${userId}`,
-      req.firebaseToken!,
+      req.authToken!,
     );
 
     if (!existing) {
@@ -119,7 +124,7 @@ adminRouter.patch(
     await setDocument(
       `users/${userId}`,
       { role: payload.role, updatedAt: timestamp },
-      req.firebaseToken!,
+      req.authToken!,
       { merge: true },
     );
 
@@ -134,7 +139,7 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const verifications = await listDocuments<VerificationRecord>(
       'verifications',
-      req.firebaseToken!,
+      req.authToken!,
       { pageSize: 200 },
     );
 
@@ -149,7 +154,7 @@ adminRouter.patch(
     const { userId } = req.params;
     const existing = await getOptionalDocument<VerificationRecord>(
       `verifications/${userId}`,
-      req.firebaseToken!,
+      req.authToken!,
     );
 
     if (!existing) {
@@ -167,14 +172,14 @@ adminRouter.patch(
     await setDocument(
       `verifications/${userId}`,
       { status: payload.status, reviewNote: payload.reviewNote, updatedAt: timestamp },
-      req.firebaseToken!,
+      req.authToken!,
       { merge: true },
     );
 
     await setDocument(
       `users/${userId}`,
       { verificationStatus: payload.status },
-      req.firebaseToken!,
+      req.authToken!,
       { merge: true },
     );
 
@@ -196,7 +201,7 @@ adminRouter.patch(
               : payload.reviewNote || 'Your verification was rejected. Review the note from the admin team and resubmit when ready.',
           relatedId: userId,
         },
-        req.firebaseToken!,
+        req.authToken!,
       ).catch(() => null);
     }
 
@@ -209,7 +214,7 @@ adminRouter.patch(
 adminRouter.get(
   '/gigs',
   asyncHandler(async (req, res) => {
-    const gigs = await listDocuments<GigRecord>('gigs', req.firebaseToken!, {
+    const gigs = await listDocuments<GigRecord>('gigs', req.authToken!, {
       pageSize: 200,
     });
 
@@ -222,7 +227,7 @@ adminRouter.get(
 adminRouter.get(
   '/appointments',
   asyncHandler(async (req, res) => {
-    const appointments = await listDocuments<AppointmentRecord>('bookings', req.firebaseToken!, {
+    const appointments = await listDocuments<AppointmentRecord>('bookings', req.authToken!, {
       pageSize: 200,
     });
 
@@ -237,7 +242,7 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const withdrawals = await listDocuments<WithdrawalRecord>(
       'withdrawals',
-      req.firebaseToken!,
+      req.authToken!,
       { pageSize: 200 },
     );
 
@@ -257,7 +262,7 @@ adminRouter.patch(
 
     const existing = await getOptionalDocument<WithdrawalRecord>(
       `withdrawals/${withdrawalId}`,
-      req.firebaseToken!,
+      req.authToken!,
     );
 
     if (!existing) {
@@ -276,7 +281,7 @@ adminRouter.patch(
     await setDocument(
       `withdrawals/${withdrawalId}`,
       { status: payload.status, updatedAt: timestamp },
-      req.firebaseToken!,
+      req.authToken!,
       { merge: true },
     );
 
@@ -295,7 +300,7 @@ adminRouter.patch(
               : `Your ${existing.provider} withdrawal for ${existing.currency} ${existing.amount} needs attention from operations.`,
           relatedId: withdrawalId,
         },
-        req.firebaseToken!,
+        req.authToken!,
       ).catch(() => null);
     }
 

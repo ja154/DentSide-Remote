@@ -18,11 +18,12 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Tech Stack
 - **Frontend**: React 19, Vite, Tailwind CSS, Framer Motion, React Router
 - **Backend**: Express.js, Node.js
+- **Identity / Data / Storage**: Supabase Auth, Supabase Postgres via REST, Supabase Storage
 - **AI**: Google Gemini API (@google/genai)
 
 ## Backend Surface
-- `GET /health`: health check with Firebase, storage, Stripe, and M-Pesa configuration flags.
-- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Firebase bearer-token validation, including persisted auth-method metadata for profile onboarding.
+- `GET /health`: health check with active auth/data/storage provider metadata plus Supabase, storage, Stripe, and M-Pesa readiness flags.
+- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Supabase bearer-token validation, including persisted auth-method metadata for profile onboarding.
 - `GET /api/dentists`, `GET /api/dentists/:dentistId`: verified dentist directory for clients and admins.
 - `GET /api/gigs`, `GET /api/gigs/:gigId`, `POST /api/gigs`, `PATCH /api/gigs/:gigId`, `DELETE /api/gigs/:gigId`: backend structure for the gig marketplace collection.
 - `POST /api/verify`, `GET /api/verify/status`: verification request intake with server-side validation.
@@ -45,34 +46,36 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 - Client and admin users now share a live `/gig-studio` surface for creating, editing, searching, and soft-closing gigs through `/api/gigs`.
 - The dentist dashboard now shows live consult queue actions from `/api/appointments` and live wallet metrics from `/api/withdraw/summary`.
 - The wallet screen can now submit withdrawal requests through `POST /api/withdraw`.
-- The verification flow now uploads real files into Firebase Storage before submitting `/api/verify` when `VITE_FIREBASE_STORAGE_BUCKET` is configured.
+- The verification flow now uploads real files into Supabase Storage before submitting `/api/verify` when `VITE_SUPABASE_STORAGE_BUCKET` is configured.
 - A shared in-app notification menu now reads from `/api/notifications`, and appointment/admin actions emit notification records for affected users.
 - The admin command center now includes user role changes and withdrawal queue actions in addition to the earlier verification moderation tools.
-- The authentication screen now supports both Google and email/password sign-in, while onboarding uses shared auth state to route authenticated users who still need a profile.
+- The authentication screen now supports Supabase-backed Google and email/password sign-in, while onboarding uses shared auth state to route authenticated users who still need a profile.
 
 ## Setup & Running Locally
 1. Clone the repository.
 2. Run `npm install` to install dependencies.
 3. Create a `.env` file based on `.env.example`.
-4. Add Firebase web config values so the backend can validate ID tokens and access Firestore through the authenticated user context:
-   - `VITE_FIREBASE_API_KEY`
-   - `VITE_FIREBASE_PROJECT_ID`
-   - `VITE_FIREBASE_AUTH_DOMAIN`
-   - `VITE_FIREBASE_STORAGE_BUCKET` for real verification uploads
-   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
-   - `VITE_FIREBASE_APP_ID`
-   - `VITE_FIREBASE_MEASUREMENT_ID` (optional)
-5. In Firebase Authentication, enable the providers you plan to use:
+4. Add backend env vars:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_STORAGE_BUCKET` if verification uploads should go to Supabase Storage
+5. Add frontend env vars:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SUPABASE_STORAGE_BUCKET`
+6. In Supabase Auth, enable:
    - Google
-   - Email/Password
-6. Optional integrations:
+   - Email
+7. Run [supabase/bootstrap.sql](/home/jay/Desktop/DentSide-Remote/supabase/bootstrap.sql) in the Supabase SQL editor to create the required tables, indexes, and a private verification bucket/policy baseline.
+8. Match `SUPABASE_STORAGE_BUCKET` and `VITE_SUPABASE_STORAGE_BUCKET` to the bucket you create there. The included SQL uses `verification-documents` by default.
+9. Optional integrations:
    - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
    - M-Pesa: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`
-7. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
-8. Run `npm run dev` to start the development server.
-9. Open `http://localhost:3000` in your browser.
-10. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
-11. Deploy both [firestore.rules](/home/jay/Desktop/DentSide-Remote/firestore.rules) and [storage.rules](/home/jay/Desktop/DentSide-Remote/storage.rules) in Firebase if you want the verification upload flow to work end-to-end.
+10. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
+11. Run `npm run dev` to start the development server.
+12. Open `http://localhost:3000` in your browser.
+13. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
 
 ## Deployment
 The app is configured to be deployed as a full-stack application.
@@ -91,12 +94,16 @@ Use this mode when the React frontend is hosted separately and Render is only se
    - `SERVE_STATIC_FRONTEND=false`
    - `APP_URL=https://your-render-service.onrender.com`
    - `ALLOWED_ORIGINS=https://your-frontend-domain.com`
-   - `VITE_FIREBASE_API_KEY`
-   - `VITE_FIREBASE_PROJECT_ID`
-   - `VITE_FIREBASE_DATABASE_ID` if you do not use the default Firestore database
-   - `VITE_FIREBASE_STORAGE_BUCKET` if verification storage is enabled
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_STORAGE_BUCKET` if verification storage is enabled
    - optional payout keys: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `MPESA_*`
-6. In the frontend deployment, set `VITE_API_BASE_URL=https://your-render-service.onrender.com` so `/api/...` calls target Render instead of the website origin.
+6. In the frontend deployment, set:
+   - `VITE_API_BASE_URL=https://your-render-service.onrender.com`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SUPABASE_STORAGE_BUCKET`
 
 When `SERVE_STATIC_FRONTEND=false`, the Render service behaves as an API-only backend and does not require a `dist` build.
 
@@ -105,7 +112,7 @@ When `SERVE_STATIC_FRONTEND=false`, the Render service behaves as an API-only ba
 - API payloads are validated with Zod on the server, including profile shape and BYOK key formatting.
 - Request size limits, rate limiting, and a global error handler reduce abuse and prevent accidental data leakage through raw stack traces.
 - Security headers are enforced with Helmet, including stricter referrer behavior.
-- Firebase-protected routes now require bearer-token validation on the server before profile, verification, gigs, appointments, withdrawals, or admin actions run.
-- Wallet, verification, gigs, and appointment structures now flow through Express routes instead of browser-side Firestore writes.
+- Supabase-protected routes now require bearer-token validation on the server before profile, verification, gigs, appointments, withdrawals, or admin actions run.
+- Wallet, verification, gigs, and appointment structures now flow through Express routes instead of browser-side writes.
 - Admin moderation now has a first-party UI instead of API-only routes.
-- Split frontend/backend deployments are supported by `VITE_API_BASE_URL`, CORS allowlists, and an API-only server mode for hosts such as Render.
+- Split frontend/backend deployments are supported by `VITE_API_BASE_URL`, CORS allowlists, Supabase-backed auth/storage clients, and an API-only server mode for hosts such as Render.

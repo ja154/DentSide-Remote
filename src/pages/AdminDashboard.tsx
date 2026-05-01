@@ -363,6 +363,12 @@ export default function AdminDashboard() {
                     <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
                       Service flags reported by `/api/admin/overview`.
                     </p>
+                    {overview ? (
+                      <p style={{ fontSize: 12, color: 'var(--color-ink-4)', marginTop: 4 }}>
+                        Auth: {overview.providers.auth} · Data: {overview.providers.data} · Storage:{' '}
+                        {overview.providers.storage}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 

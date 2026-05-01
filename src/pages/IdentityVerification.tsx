@@ -6,8 +6,10 @@ import {
   type VerificationRecord,
   type VerificationStatusResponse,
 } from '../lib/api';
-import { storage } from '../lib/firebase';
-import { ref as storageRef, uploadBytes } from 'firebase/storage';
+import {
+  storageConfigured as runtimeStorageConfigured,
+  uploadProtectedFile,
+} from '../lib/storage-client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu,
@@ -129,7 +131,7 @@ export default function IdentityVerification() {
         }
 
         if (loadError instanceof ApiError && loadError.status === 404) {
-          setStorageConfigured(Boolean(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET));
+          setStorageConfigured(runtimeStorageConfigured);
           setForm((current) => ({
             ...current,
             legalName: profile?.displayName || current.legalName,
@@ -194,27 +196,23 @@ export default function IdentityVerification() {
   const resolveUploadedDocument = async (): Promise<UploadedDocument> => {
     if (selectedFile) {
       if (storageConfigured) {
-        if (!storage || !profile?.uid) {
+        if (!profile?.uid) {
           throw new Error(
-            'Firebase Storage is not ready. Confirm your Firebase bucket settings and try again.',
+            'Secure storage is not ready. Confirm your provider settings and try again.',
           );
         }
 
         const path = `verification-documents/${profile.uid}/${Date.now()}-${sanitizeFileName(selectedFile.name)}`;
-        const uploadTarget = storageRef(storage, path);
-
-        await uploadBytes(uploadTarget, selectedFile, {
-          contentType: selectedFile.type || undefined,
-          customMetadata: {
-            uploadedBy: profile.uid,
-          },
+        const uploaded = await uploadProtectedFile({
+          path,
+          file: selectedFile,
         });
 
         return {
           name: selectedFile.name,
-          path,
-          contentType: selectedFile.type || 'application/octet-stream',
-          sizeBytes: selectedFile.size,
+          path: uploaded.path,
+          contentType: uploaded.contentType,
+          sizeBytes: uploaded.sizeBytes,
         };
       }
 
@@ -423,8 +421,8 @@ export default function IdentityVerification() {
               </div>
               <p style={{ fontSize: 12, color: 'var(--color-ink-4)', lineHeight: 1.6 }}>
                 {storageConfigured
-                  ? 'Verification documents are being stored in your configured Firebase bucket.'
-                  : 'Firebase Storage is not configured yet, so submissions will fall back to metadata-only tracking.'}
+                  ? 'Verification documents are being stored in your configured secure bucket.'
+                  : 'Secure file storage is not configured yet, so submissions will fall back to metadata-only tracking.'}
               </p>
             </div>
           </aside>
@@ -543,7 +541,7 @@ export default function IdentityVerification() {
                   Upload License Document
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--color-ink-4)', lineHeight: 1.55, marginBottom: 16 }}>
-                  PDF, JPG, or PNG up to 10 MB. When storage is configured, the file is uploaded directly to Firebase Storage before submission.
+                  PDF, JPG, or PNG up to 10 MB. When storage is configured, the file is uploaded directly to your secure storage provider before submission.
                 </p>
                 <input
                   ref={fileInputRef}
@@ -677,7 +675,7 @@ export default function IdentityVerification() {
             icon={<BadgeCheck size={18} color="var(--color-amber)" />}
             bg="var(--color-amber-light)"
             title="Secure Storage"
-            body="When your Firebase bucket is configured, the license file is stored securely before the review record is submitted."
+            body="When secure storage is configured, the license file is stored safely before the review record is submitted."
           />
           <InsightCard
             icon={<HelpCircle size={18} color="var(--color-sage)" />}

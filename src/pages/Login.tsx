@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  updateProfile as updateFirebaseProfile,
-  type User as FirebaseUser,
-} from 'firebase/auth';
 import { apiRequest, getDashboardPathForRole, type Role, type UserProfile } from '../lib/api';
-import { auth, googleProvider } from '../lib/firebase';
 import BrandMark from '../components/BrandMark';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  authConfigured,
+  signInWithEmail,
+  signInWithGoogle,
+  signUpWithEmail,
+  type AuthUser,
+} from '../lib/auth-client';
 import {
   Stethoscope,
   Users,
@@ -33,24 +32,22 @@ type EmailAuthForm = {
   confirmPassword: string;
 };
 
-const inferAuthMethod = (firebaseUser: FirebaseUser | null): AuthMethod | undefined => {
-  if (!firebaseUser) {
+const inferAuthMethod = (authUser: AuthUser | null): AuthMethod | undefined => {
+  if (!authUser) {
     return undefined;
   }
 
-  const providerIds = firebaseUser.providerData
-    .map((provider) => provider.providerId)
-    .filter(Boolean);
+  const providerIds = authUser.providerIds.filter(Boolean);
 
-  if (providerIds.includes('google.com')) {
+  if (providerIds.includes('google') || providerIds.includes('google.com')) {
     return 'google';
   }
 
-  if (providerIds.includes('password')) {
+  if (providerIds.includes('email') || providerIds.includes('password')) {
     return 'email';
   }
 
-  return firebaseUser.email ? 'email' : undefined;
+  return authUser.email ? 'email' : undefined;
 };
 
 const formatAuthError = (error: unknown) => {
@@ -58,6 +55,7 @@ const formatAuthError = (error: unknown) => {
     typeof error === 'object' && error && 'code' in error && typeof error.code === 'string'
       ? error.code
       : '';
+  const message = error instanceof Error ? error.message : '';
 
   switch (code) {
     case 'auth/email-already-in-use':
@@ -75,7 +73,23 @@ const formatAuthError = (error: unknown) => {
     case 'auth/weak-password':
       return 'Use a stronger password with at least 6 characters.';
     default:
-      return error instanceof Error ? error.message : 'Authentication failed. Please try again.';
+      if (/already has an account|email rate limit exceeded/i.test(message)) {
+        return 'That email address already has an account. Try signing in instead.';
+      }
+
+      if (/invalid login credentials|invalid email or password/i.test(message)) {
+        return 'The email or password you entered is incorrect.';
+      }
+
+      if (/password should be at least/i.test(message)) {
+        return 'Use a stronger password with at least 6 characters.';
+      }
+
+      if (/email not confirmed/i.test(message)) {
+        return 'Check your inbox and confirm your email address before signing in.';
+      }
+
+      return message || 'Authentication failed. Please try again.';
   }
 };
 
@@ -159,14 +173,14 @@ export default function Login() {
     setIsSubmitting(true);
     setError('');
 
-    if (!auth) {
-      setError('Firebase keys are missing. Please configure your .env variables to log in.');
+    if (!authConfigured) {
+      setError('Authentication is not configured. Add the required provider env variables first.');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithGoogle();
     } catch (signInError) {
       console.error(signInError);
       setError(formatAuthError(signInError));
@@ -180,8 +194,8 @@ export default function Login() {
     setIsSubmitting(true);
     setError('');
 
-    if (!auth) {
-      setError('Firebase keys are missing. Please configure your .env variables to log in.');
+    if (!authConfigured) {
+      setError('Authentication is not configured. Add the required provider env variables first.');
       setIsSubmitting(false);
       return;
     }
@@ -224,12 +238,13 @@ export default function Login() {
 
     try {
       if (authMode === 'signup') {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        await updateFirebaseProfile(result.user, {
+        await signUpWithEmail({
+          email,
+          password,
           displayName,
         });
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmail(email, password);
       }
     } catch (authError) {
       console.error(authError);

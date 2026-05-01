@@ -1,10 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { ApiError, apiRequest, type UserProfile } from '../lib/api';
-import { auth } from '../lib/firebase';
+import {
+  getCurrentUser,
+  onAuthStateChanged,
+  signOut,
+  type AuthUser,
+} from '../lib/auth-client';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   profile: UserProfile | null;
   loading: boolean;
   profileLoading: boolean;
@@ -28,14 +32,14 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const needsProfileSetup = Boolean(user && !profile && !loading && !profileLoading);
 
   const refreshProfile = async () => {
-    if (!auth?.currentUser) {
+    if (!getCurrentUser()) {
       setProfile(null);
       setProfileLoading(false);
       return null;
@@ -59,18 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    if (!auth) {
-      console.warn("Firebase is not initialized. Check your environment variables.");
-      setLoading(false);
-      setProfileLoading(false);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
+    const unsubscribe = onAuthStateChanged(async (nextUser) => {
+      setUser(nextUser);
       setLoading(false);
 
-      if (firebaseUser) {
+      if (nextUser) {
         try {
           await refreshProfile();
         } catch (error) {
@@ -88,9 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = async () => {
-    if (auth) {
-      await signOut(auth);
-    }
+    await signOut();
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {

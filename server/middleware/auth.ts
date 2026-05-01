@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../errors.ts';
-import { getOptionalDocument, validateFirebaseIdToken } from '../services/firebase-rest.ts';
+import { getOptionalDocument, validateAuthToken } from '../services/data-provider.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { Role, UserProfile } from '../types.ts';
 
@@ -17,20 +17,20 @@ export const requireAuth = asyncHandler(async (req, _res, next) => {
   const token = extractBearerToken(req.header('authorization'));
 
   if (!token) {
-    throw new AppError('A Firebase bearer token is required for this route.', 401, 'unauthorized');
+    throw new AppError('A bearer token is required for this route.', 401, 'unauthorized');
   }
 
-  req.firebaseToken = token;
-  req.firebaseUser = await validateFirebaseIdToken(token);
+  req.authToken = token;
+  req.authUser = await validateAuthToken(token);
   next();
 });
 
 export const loadUserProfile = asyncHandler(async (req, _res, next) => {
-  if (!req.firebaseToken || !req.firebaseUser) {
+  if (!req.authToken || !req.authUser) {
     throw new AppError('Authentication context is not available.', 401, 'unauthorized');
   }
 
-  req.profile = await getOptionalDocument<UserProfile>(`users/${req.firebaseUser.uid}`, req.firebaseToken);
+  req.profile = await getOptionalDocument<UserProfile>(`users/${req.authUser.uid}`, req.authToken);
   next();
 });
 

@@ -8,8 +8,13 @@ healthRouter.get('/', (_req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.round(process.uptime()),
+    providers: {
+      auth: 'supabase',
+      data: 'supabase',
+      storage: env.storageProvider,
+    },
     services: {
-      firebase: env.firebaseConfigured,
+      supabase: env.supabaseConfigured,
       storage: env.storageConfigured,
       stripe: env.stripeConfigured,
       mpesa: env.mpesaConfigured,

@@ -1,4 +1,4 @@
-import { auth } from './firebase';
+import { getAccessToken } from './auth-client';
 
 export type Role = 'dentist' | 'client' | 'admin';
 export type AuthMethod = 'google' | 'email';
@@ -147,10 +147,15 @@ export interface AdminOverview {
     withdrawals: number;
   };
   integrations: {
-    firebase: boolean;
+    supabase: boolean;
     storage: boolean;
     stripe: boolean;
     mpesa: boolean;
+  };
+  providers: {
+    auth: 'supabase';
+    data: 'supabase';
+    storage: 'supabase' | 'none';
   };
 }
 
@@ -195,11 +200,7 @@ export class ApiError extends Error {
 }
 
 const getAuthToken = async () => {
-  if (!auth?.currentUser) {
-    return null;
-  }
-
-  return auth.currentUser.getIdToken();
+  return getAccessToken();
 };
 
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
@@ -240,6 +241,7 @@ export async function apiRequest<T>(input: string, init: RequestInit = {}): Prom
 
   const response = await fetch(resolveApiUrl(input), {
     ...init,
+    cache: init.cache ?? 'no-store',
     headers,
   });
 
