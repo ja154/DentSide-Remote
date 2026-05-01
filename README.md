@@ -54,28 +54,31 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Setup & Running Locally
 1. Clone the repository.
 2. Run `npm install` to install dependencies.
-3. Create a `.env` file based on `.env.example`.
-4. Add backend env vars:
+3. Create a root `.env` file based on [.env.example](/home/jay/Desktop/DentSide-Remote/.env.example) for frontend Vite variables.
+4. Create a `server/.env` file based on [server/.env.example](/home/jay/Desktop/DentSide-Remote/server/.env.example) for backend Express variables.
+5. Add backend env vars in `server/.env`:
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `SUPABASE_STORAGE_BUCKET` if verification uploads should go to Supabase Storage
-5. Add frontend env vars:
+6. Add frontend env vars in the root `.env`:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_SUPABASE_STORAGE_BUCKET`
-6. In Supabase Auth, enable:
+7. In Supabase Auth, enable:
    - Google
    - Email
-7. Run [supabase/bootstrap.sql](/home/jay/Desktop/DentSide-Remote/supabase/bootstrap.sql) in the Supabase SQL editor to create the required tables, indexes, and a private verification bucket/policy baseline.
-8. Match `SUPABASE_STORAGE_BUCKET` and `VITE_SUPABASE_STORAGE_BUCKET` to the bucket you create there. The included SQL uses `verification-documents` by default.
-9. Optional integrations:
+8. Run [supabase/bootstrap.sql](/home/jay/Desktop/DentSide-Remote/supabase/bootstrap.sql) in the Supabase SQL editor to create the required tables, indexes, and a private verification bucket/policy baseline.
+9. Match `SUPABASE_STORAGE_BUCKET` and `VITE_SUPABASE_STORAGE_BUCKET` to the bucket you create there. The included SQL uses `verification-documents` by default.
+10. Optional integrations in `server/.env`:
    - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
    - M-Pesa: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`
-10. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
-11. Run `npm run dev` to start the development server.
-12. Open `http://localhost:3000` in your browser.
-13. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
+11. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
+12. Run `npm run dev` to start the development server.
+13. Open `http://localhost:3000` in your browser.
+14. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
+
+The backend still falls back to matching keys in the root `.env` for compatibility, but `server/.env` is now the preferred home for backend-only secrets and deployment settings.
 
 ## Deployment
 The app is configured to be deployed as a full-stack application.
@@ -89,7 +92,8 @@ Use this mode when the React frontend is hosted separately and Render is only se
 2. Set the build command to `npm install`.
 3. Set the start command to `npm run start:api`.
 4. Set the health check path to `/health`.
-5. Configure these backend environment variables in Render:
+5. Keep your local backend values in `server/.env`, but enter the production values in Render's Environment settings because Render does not read your local env file.
+6. Configure these backend environment variables in Render:
    - `NODE_ENV=production`
    - `SERVE_STATIC_FRONTEND=false`
    - `APP_URL=https://your-render-service.onrender.com`
@@ -99,7 +103,7 @@ Use this mode when the React frontend is hosted separately and Render is only se
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `SUPABASE_STORAGE_BUCKET` if verification storage is enabled
    - optional payout keys: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `MPESA_*`
-6. In the frontend deployment, set:
+7. In the frontend deployment, set:
    - `VITE_API_BASE_URL=https://your-render-service.onrender.com`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
