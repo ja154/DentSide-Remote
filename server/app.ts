@@ -49,11 +49,14 @@ export async function createApp() {
       contentSecurityPolicy: env.NODE_ENV === 'production' ? {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "https://apis.google.com"],
+          scriptSrc: ["'self'", "https://apis.google.com", "https://www.gstatic.com"],
           connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://*.googleusercontent.com"],
           imgSrc: ["'self'", "data:", "https://*.googleusercontent.com"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          frameSrc: ["'self'", "https://*.firebaseapp.com", "https://*.web.app", "https://apis.google.com"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
         },
       } : false,
       crossOriginEmbedderPolicy: false,
