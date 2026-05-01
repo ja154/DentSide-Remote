@@ -13,14 +13,15 @@
 - [x] Harden AI match API (request validation, body limits, request IDs, sanitized error responses)
 
 ### Current Backend Status
-- Firebase-authenticated Express routes now exist for the main platform domains, but they still depend on valid Firebase project configuration in `.env`.
+- The auth/data/storage layer is now aligned to Supabase across the frontend and backend.
+- Express routes now assume Supabase-backed auth and data access, which keeps the Render hosting plan consistent across environments.
 - Stripe and M-Pesa flows are scaffolded at the API boundary, with provider configuration still needed before live payouts can be processed.
-- Verification intake now supports real Firebase Storage uploads when a bucket is configured, with metadata-only fallback only when storage is intentionally unavailable.
+- Verification intake now supports real Supabase Storage uploads when a bucket is configured, with metadata-only fallback only when storage is intentionally unavailable.
 - An admin command-center UI now exists for operations review and verification moderation.
 - Verified dentist search, consult requests, withdrawal requests, and admin role/payout actions are now connected to the live Express API from the frontend.
 - The backend can now run in API-only production mode for Render, while separately hosted frontends can target it through `VITE_API_BASE_URL`.
 - Client and admin users now have a shared gig studio for end-to-end marketplace CRUD on top of `/api/gigs`.
-- Authentication now supports both Google and email/password sign-in, with profile setup driven from shared auth state whenever an authenticated user does not yet have a `users/{uid}` record.
+- Authentication now supports Supabase-backed Google and email/password sign-in, with profile setup driven from shared auth state whenever an authenticated user does not yet have a `users/{uid}` record.
 
 ## 🟡 PHASE 2 — Teledentistry Layer (3–6 months)
 **Focus:** Second opinions, Treatment planning (No prescriptions initially to avoid legal risk).

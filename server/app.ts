@@ -22,6 +22,7 @@ import { env } from './env.ts';
 
 export async function createApp() {
   const app = express();
+  const supabaseOrigin = env.SUPABASE_URL ? new URL(env.SUPABASE_URL).origin : null;
 
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -43,18 +44,36 @@ export async function createApp() {
 
   app.use(cors(corsOptions));
   app.options('*', cors(corsOptions));
+  app.use('/api', (_req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
 
   app.use(
     helmet({
       contentSecurityPolicy: env.NODE_ENV === 'production' ? {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "https://apis.google.com", "https://www.gstatic.com"],
-          connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://*.googleusercontent.com"],
-          imgSrc: ["'self'", "data:", "https://*.googleusercontent.com"],
+          scriptSrc: ["'self'"],
+          connectSrc: [
+            "'self'",
+            "https://*.supabase.co",
+            ...(supabaseOrigin ? [supabaseOrigin] : []),
+          ],
+          imgSrc: [
+            "'self'",
+            "data:",
+            "https://api.dicebear.com",
+            "https://*.supabase.co",
+            ...(supabaseOrigin ? [supabaseOrigin] : []),
+          ],
           styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           fontSrc: ["'self'", "https://fonts.gstatic.com"],
-          frameSrc: ["'self'", "https://*.firebaseapp.com", "https://*.web.app", "https://apis.google.com"],
+          frameSrc: [
+            "'self'",
+            "https://*.supabase.co",
+            ...(supabaseOrigin ? [supabaseOrigin] : []),
+          ],
           frameAncestors: ["'none'"],
           baseUri: ["'self'"],
         },

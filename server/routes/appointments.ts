@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { AppError } from '../errors.ts';
 import { AppointmentCreateSchema, AppointmentPatchSchema } from '../schemas.ts';
-import { getOptionalDocument, listDocuments, setDocument } from '../services/firebase-rest.ts';
+import { getOptionalDocument, listDocuments, setDocument } from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth, requireRole } from '../middleware/auth.ts';
 import { createNotification } from './notifications.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
@@ -22,7 +22,7 @@ appointmentsRouter.use(requireAuth, loadUserProfile, ensureProfile);
 appointmentsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const documents = await listDocuments<AppointmentRecord>('bookings', req.firebaseToken!, {
+    const documents = await listDocuments<AppointmentRecord>('bookings', req.authToken!, {
       pageSize: 100,
       orderBy: 'updatedAt desc',
     });
@@ -55,7 +55,7 @@ appointmentsRouter.get(
 
     const appointment = await getOptionalDocument<AppointmentRecord>(
       `bookings/${appointmentId}`,
-      req.firebaseToken!,
+      req.authToken!,
     );
 
     if (!appointment) {
@@ -90,7 +90,7 @@ appointmentsRouter.post(
     const appointment: AppointmentRecord = {
       clientId: req.profile!.uid,
       clientName:
-        req.profile!.displayName || req.firebaseUser?.displayName || req.profile!.email,
+        req.profile!.displayName || req.authUser?.displayName || req.profile!.email,
       dentistId: payload.dentistId,
       dentistName: payload.dentistName,
       reason: payload.reason,
@@ -100,7 +100,7 @@ appointmentsRouter.post(
       updatedAt: timestamp,
     };
 
-    await setDocument(`bookings/${documentId}`, appointment, req.firebaseToken!);
+    await setDocument(`bookings/${documentId}`, appointment, req.authToken!);
 
     if (appointment.dentistId) {
       await createNotification(
@@ -111,7 +111,7 @@ appointmentsRouter.post(
           body: `${appointment.clientName} requested a consult${appointment.scheduledFor ? ` for ${appointment.scheduledFor}` : '.'}`,
           relatedId: documentId,
         },
-        req.firebaseToken!,
+        req.authToken!,
       ).catch(() => null);
     }
 
@@ -137,7 +137,7 @@ appointmentsRouter.patch(
 
     const existing = await getOptionalDocument<AppointmentRecord>(
       `bookings/${appointmentId}`,
-      req.firebaseToken!,
+      req.authToken!,
     );
 
     if (!existing) {
@@ -195,7 +195,7 @@ appointmentsRouter.patch(
     if (patch.dentistId !== undefined) updatePayload.dentistId = patch.dentistId;
     if (patch.dentistName !== undefined) updatePayload.dentistName = patch.dentistName;
 
-    await setDocument(`bookings/${appointmentId}`, updatePayload, req.firebaseToken!, {
+    await setDocument(`bookings/${appointmentId}`, updatePayload, req.authToken!, {
       merge: true,
     });
 
@@ -210,7 +210,7 @@ appointmentsRouter.patch(
           body: `${existing.dentistName || patch.dentistName || 'Your dentist'} confirmed your consult request.`,
           relatedId: appointmentId,
         },
-        req.firebaseToken!,
+        req.authToken!,
       ).catch(() => null);
     }
 
@@ -223,7 +223,7 @@ appointmentsRouter.patch(
           body: `${existing.dentistName || patch.dentistName || 'Your dentist'} marked the consult as completed.`,
           relatedId: appointmentId,
         },
-        req.firebaseToken!,
+        req.authToken!,
       ).catch(() => null);
     }
 
@@ -251,7 +251,7 @@ appointmentsRouter.patch(
                   : `${existing.dentistName || patch.dentistName || 'Your dentist'} cancelled the consult.`,
               relatedId: appointmentId,
             },
-            req.firebaseToken!,
+            req.authToken!,
           ).catch(() => null),
         ),
       );

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AppError } from '../errors.ts';
 import { AuthProfileCreateSchema, UserProfilePatchSchema } from '../schemas.ts';
-import { getOptionalDocument, setDocument } from '../services/firebase-rest.ts';
+import { getOptionalDocument, setDocument } from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth } from '../middleware/auth.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { UserProfile } from '../types.ts';
@@ -13,19 +13,19 @@ authRouter.use(requireAuth);
 authRouter.post(
   '/profile',
   asyncHandler(async (req, res) => {
-    if (!req.firebaseUser || !req.firebaseToken) {
+    if (!req.authUser || !req.authToken) {
       throw new AppError('Authentication context is not available.', 401, 'unauthorized');
     }
 
     const { role, displayName, authMethod } = AuthProfileCreateSchema.parse(req.body);
-    const existingProfile = await getOptionalDocument<UserProfile>(`users/${req.firebaseUser.uid}`, req.firebaseToken);
+    const existingProfile = await getOptionalDocument<UserProfile>(`users/${req.authUser.uid}`, req.authToken);
     const timestamp = new Date().toISOString();
 
     const profile: UserProfile = {
-      uid: req.firebaseUser.uid,
-      email: req.firebaseUser.email,
-      displayName: existingProfile?.displayName || displayName || req.firebaseUser.displayName,
-      photoURL: req.firebaseUser.photoURL || existingProfile?.photoURL,
+      uid: req.authUser.uid,
+      email: req.authUser.email,
+      displayName: existingProfile?.displayName || displayName || req.authUser.displayName,
+      photoURL: req.authUser.photoURL || existingProfile?.photoURL,
       authMethod: existingProfile?.authMethod || authMethod,
       role: existingProfile?.role || role,
       createdAt: existingProfile?.createdAt || timestamp,
@@ -38,7 +38,7 @@ authRouter.post(
       verificationStatus: existingProfile?.verificationStatus || 'unverified',
     };
 
-    await setDocument(`users/${req.firebaseUser.uid}`, profile, req.firebaseToken);
+    await setDocument(`users/${req.authUser.uid}`, profile, req.authToken);
     res.status(existingProfile ? 200 : 201).json(profile);
   }),
 );
@@ -56,7 +56,7 @@ authRouter.patch(
   loadUserProfile,
   ensureProfile,
   asyncHandler(async (req, res) => {
-    if (!req.firebaseUser || !req.firebaseToken || !req.profile) {
+    if (!req.authUser || !req.authToken || !req.profile) {
       throw new AppError('Authentication context is not available.', 401, 'unauthorized');
     }
 
@@ -69,9 +69,9 @@ authRouter.patch(
     };
 
     await setDocument(
-      `users/${req.firebaseUser.uid}`,
+      `users/${req.authUser.uid}`,
       { ...patch, updatedAt: timestamp },
-      req.firebaseToken,
+      req.authToken,
       { merge: true },
     );
     res.json(nextProfile);

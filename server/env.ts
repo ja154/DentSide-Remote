@@ -10,14 +10,10 @@ const EnvSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
-  VITE_FIREBASE_API_KEY: z.string().optional(),
-  VITE_FIREBASE_PROJECT_ID: z.string().optional(),
-  VITE_FIREBASE_DATABASE_ID: z.string().default('(default)'),
-  VITE_FIREBASE_AUTH_DOMAIN: z.string().optional(),
-  VITE_FIREBASE_STORAGE_BUCKET: z.string().optional(),
-  VITE_FIREBASE_MESSAGING_SENDER_ID: z.string().optional(),
-  VITE_FIREBASE_APP_ID: z.string().optional(),
-  VITE_FIREBASE_MEASUREMENT_ID: z.string().optional(),
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_STORAGE_BUCKET: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   MPESA_CONSUMER_KEY: z.string().optional(),
@@ -32,14 +28,22 @@ if (parsedEnv.NODE_ENV === 'production' && !parsedEnv.APP_URL) {
   throw new Error('APP_URL must be set in production.');
 }
 
+const supabaseConfigured = Boolean(
+  parsedEnv.SUPABASE_URL &&
+    parsedEnv.SUPABASE_ANON_KEY &&
+    parsedEnv.SUPABASE_SERVICE_ROLE_KEY,
+);
+const storageProvider = parsedEnv.SUPABASE_STORAGE_BUCKET ? 'supabase' : 'none';
+
 export const env = {
   ...parsedEnv,
   allowedOrigins: parsedEnv.ALLOWED_ORIGINS.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
   serveStaticFrontend: parsedEnv.SERVE_STATIC_FRONTEND,
-  firebaseConfigured: Boolean(parsedEnv.VITE_FIREBASE_API_KEY && parsedEnv.VITE_FIREBASE_PROJECT_ID),
-  storageConfigured: Boolean(parsedEnv.VITE_FIREBASE_STORAGE_BUCKET),
+  supabaseConfigured,
+  storageProvider,
+  storageConfigured: storageProvider !== 'none',
   stripeConfigured: Boolean(parsedEnv.STRIPE_SECRET_KEY && parsedEnv.STRIPE_WEBHOOK_SECRET),
   mpesaConfigured: Boolean(
     parsedEnv.MPESA_CONSUMER_KEY &&

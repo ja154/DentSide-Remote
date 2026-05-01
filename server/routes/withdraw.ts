@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { env } from '../env.ts';
 import { WithdrawalRequestSchema } from '../schemas.ts';
-import { listDocuments, setDocument } from '../services/firebase-rest.ts';
+import { listDocuments, setDocument } from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth, requireRole } from '../middleware/auth.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { WalletSummary, WithdrawalRecord } from '../types.ts';
@@ -14,7 +14,7 @@ withdrawRouter.use(requireAuth, loadUserProfile, ensureProfile, requireRole(['de
 withdrawRouter.get(
   '/summary',
   asyncHandler(async (req, res) => {
-    const records = await listDocuments<WithdrawalRecord>('withdrawals', req.firebaseToken!, {
+    const records = await listDocuments<WithdrawalRecord>('withdrawals', req.authToken!, {
       pageSize: 100,
       orderBy: 'updatedAt desc',
     });
@@ -45,7 +45,7 @@ withdrawRouter.get(
 withdrawRouter.get(
   '/history',
   asyncHandler(async (req, res) => {
-    const records = await listDocuments<WithdrawalRecord>('withdrawals', req.firebaseToken!, {
+    const records = await listDocuments<WithdrawalRecord>('withdrawals', req.authToken!, {
       pageSize: 100,
       orderBy: 'updatedAt desc',
     });
@@ -78,7 +78,7 @@ withdrawRouter.post(
       updatedAt: timestamp,
     };
 
-    await setDocument(`withdrawals/${documentId}`, withdrawal, req.firebaseToken!);
+    await setDocument(`withdrawals/${documentId}`, withdrawal, req.authToken!);
 
     res.status(202).json({
       id: documentId,

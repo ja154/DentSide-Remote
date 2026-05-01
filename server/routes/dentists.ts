@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listDocuments } from '../services/firebase-rest.ts';
+import { listDocuments } from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth } from '../middleware/auth.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { UserProfile, WithId } from '../types.ts';
@@ -17,7 +17,7 @@ dentistsRouter.use(requireAuth, loadUserProfile, ensureProfile);
 dentistsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const documents = await listDocuments<UserProfile>('users', req.firebaseToken!, {
+    const documents = await listDocuments<UserProfile>('users', req.authToken!, {
       pageSize: 200,
     });
 
@@ -74,7 +74,7 @@ dentistsRouter.get(
     const { dentistId } = req.params;
     const isAdmin = req.profile!.role === 'admin';
 
-    const documents = await listDocuments<UserProfile>('users', req.firebaseToken!, {
+    const documents = await listDocuments<UserProfile>('users', req.authToken!, {
       pageSize: 1,
     });
 

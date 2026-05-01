@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AppError } from '../errors.ts';
 import { VerificationSubmitSchema } from '../schemas.ts';
-import { getOptionalDocument, setDocument } from '../services/firebase-rest.ts';
+import { getOptionalDocument, setDocument } from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth, requireRole } from '../middleware/auth.ts';
 import { env } from '../env.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
@@ -15,7 +15,7 @@ verificationRouter.get(
   '/status',
   requireRole(['dentist', 'admin']),
   asyncHandler(async (req, res) => {
-    const verification = await getOptionalDocument<VerificationRecord>(`verifications/${req.profile!.uid}`, req.firebaseToken!);
+    const verification = await getOptionalDocument<VerificationRecord>(`verifications/${req.profile!.uid}`, req.authToken!);
 
     res.json({
       verification: verification ? { id: req.profile!.uid, ...verification } : null,
@@ -57,7 +57,7 @@ verificationRouter.post(
       updatedAt: timestamp,
     };
 
-    await setDocument(`verifications/${req.profile!.uid}`, verification, req.firebaseToken!);
+    await setDocument(`verifications/${req.profile!.uid}`, verification, req.authToken!);
     await setDocument(
       `users/${req.profile!.uid}`,
       {
@@ -66,7 +66,7 @@ verificationRouter.post(
         verificationStatus: 'pending',
         updatedAt: timestamp,
       },
-      req.firebaseToken!,
+      req.authToken!,
       { merge: true },
     );
 
@@ -75,7 +75,7 @@ verificationRouter.post(
       storageConfigured: env.storageConfigured,
       message: env.storageConfigured
         ? 'Verification submitted successfully.'
-        : 'Verification submitted as metadata only. Configure Firebase Storage before accepting license uploads.',
+        : 'Verification submitted as metadata only. Configure secure file storage before accepting license uploads.',
     });
   }),
 );

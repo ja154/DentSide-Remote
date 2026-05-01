@@ -6,6 +6,10 @@ import ClientLayout from '../components/ClientLayout';
 
 export default function ClientDashboard() {
   const { profile } = useAuth();
+  const firstName =
+    typeof profile?.displayName === 'string' && profile.displayName.trim()
+      ? profile.displayName.trim().split(/\s+/)[0]
+      : 'there';
 
   return (
     <ClientLayout title="Client Dashboard">
@@ -14,7 +18,7 @@ export default function ClientDashboard() {
         <div className="ds-page-header">
           <p className="ds-page-eyebrow">Client Portal</p>
           <h1 className="ds-page-title">
-            Welcome, {profile?.displayName?.split(' ')[0] || 'there'}
+            Welcome, {firstName}
           </h1>
           <p className="ds-page-subtitle">
             Access your appointments, find dental professionals, and manage your consultations all in one place.
