@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { ApiError, apiRequest, type NotificationFeed, type NotificationItem } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function NotificationMenu() {
+  const { user } = useAuth();
   const [feed, setFeed] = useState<NotificationFeed>({ notifications: [], unreadCount: 0 });
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +37,32 @@ export default function NotificationMenu() {
   useEffect(() => {
     loadNotifications();
   }, []);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`notifications:${user.uid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `userId=eq.${user.uid}`,
+        },
+        () => {
+          void loadNotifications();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!isOpen) {

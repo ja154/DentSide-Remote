@@ -8,6 +8,7 @@ export const supabaseConfig = {
   url: import.meta.env.VITE_SUPABASE_URL?.trim() || '',
   anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || '',
   storageBucket: import.meta.env.VITE_SUPABASE_STORAGE_BUCKET?.trim() || '',
+  defaultCountryCode: import.meta.env.VITE_DEFAULT_COUNTRY_CODE?.trim() || '254',
 };
 
 export const storageProvider: StorageProvider = supabaseConfig.storageBucket ? 'supabase' : 'none';

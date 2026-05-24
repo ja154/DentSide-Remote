@@ -11,6 +11,7 @@ import { dentistsRouter } from './routes/dentists.ts';
 import { gigsRouter } from './routes/gigs.ts';
 import { healthRouter } from './routes/health.ts';
 import { matchRouter } from './routes/match.ts';
+import { mpesaWebhookRouter } from './routes/mpesa-webhook.ts';
 import { notificationsRouter } from './routes/notifications.ts';
 import { stripeWebhookRouter } from './routes/stripe-webhook.ts';
 import { verificationRouter } from './routes/verification.ts';
@@ -31,6 +32,7 @@ export async function createApp() {
   app.use(requestLogger);
   app.use('/api/webhooks/stripe', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhookRouter);
   app.use(express.json({ limit: '100kb' }));
+  app.use('/api/webhooks/mpesa', mpesaWebhookRouter);
 
   const corsOptions: CorsOptions = {
     origin:

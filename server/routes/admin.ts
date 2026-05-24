@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { AppError } from '../errors.ts';
 import { AdminVerificationDecisionSchema, AdminWithdrawalDecisionSchema, AdminUserRolePatchSchema } from '../schemas.ts';
 import {
+  countDocuments,
   getOptionalDocument,
   listDocuments,
   setDocument,
@@ -34,20 +35,20 @@ adminRouter.get(
   '/overview',
   asyncHandler(async (req, res) => {
     const [users, gigs, verifications, bookings, withdrawals] = await Promise.all([
-      listDocuments<UserProfile>('users', req.authToken!, { pageSize: 200 }),
-      listDocuments<GigRecord>('gigs', req.authToken!, { pageSize: 200 }),
-      listDocuments<VerificationRecord>('verifications', req.authToken!, { pageSize: 200 }),
-      listDocuments<AppointmentRecord>('bookings', req.authToken!, { pageSize: 200 }),
-      listDocuments<WithdrawalRecord>('withdrawals', req.authToken!, { pageSize: 200 }),
+      countDocuments('users', req.authToken!),
+      countDocuments('gigs', req.authToken!),
+      countDocuments('verifications', req.authToken!),
+      countDocuments('bookings', req.authToken!),
+      countDocuments('withdrawals', req.authToken!),
     ]);
 
     res.json({
       counts: {
-        users: users.length,
-        gigs: gigs.length,
-        verifications: verifications.length,
-        bookings: bookings.length,
-        withdrawals: withdrawals.length,
+        users,
+        gigs,
+        verifications,
+        bookings,
+        withdrawals,
       },
       integrations: {
         supabase: env.supabaseConfigured,
@@ -73,27 +74,26 @@ adminRouter.get(
 adminRouter.get(
   '/users',
   asyncHandler(async (req, res) => {
-    const users = await listDocuments<UserProfile>('users', req.authToken!, {
-      pageSize: 200,
-    });
-
     const roleFilter =
       typeof req.query.role === 'string' ? req.query.role.trim() : '';
     const search =
-      typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
+      typeof req.query.search === 'string' ? req.query.search.trim() : '';
 
-    const filtered = users
-      .filter((u) => !roleFilter || u.role === roleFilter)
-      .filter((u) => {
-        if (!search) return true;
-        return [u.displayName || '', u.email, u.uid]
-          .join(' ')
-          .toLowerCase()
-          .includes(search);
-      })
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const users = await listDocuments<UserProfile>('users', req.authToken!, {
+      pageSize: 200,
+      orderBy: 'createdAt desc',
+      filters: roleFilter ? [{ column: 'role', value: roleFilter }] : undefined,
+      or: search
+        ? [
+            { column: 'displayName', operator: 'ilike', value: `*${search}*` },
+            { column: 'email', operator: 'ilike', value: `*${search}*` },
+            { column: 'phoneNumber', operator: 'ilike', value: `*${search}*` },
+            { column: 'uid', operator: 'ilike', value: `*${search}*` },
+          ]
+        : undefined,
+    });
 
-    res.json(filtered);
+    res.json(users);
   }),
 );
 
@@ -140,10 +140,10 @@ adminRouter.get(
     const verifications = await listDocuments<VerificationRecord>(
       'verifications',
       req.authToken!,
-      { pageSize: 200 },
+      { pageSize: 200, orderBy: 'updatedAt desc' },
     );
 
-    res.json(verifications.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+    res.json(verifications);
   }),
 );
 
@@ -216,9 +216,10 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const gigs = await listDocuments<GigRecord>('gigs', req.authToken!, {
       pageSize: 200,
+      orderBy: 'updatedAt desc',
     });
 
-    res.json(gigs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+    res.json(gigs);
   }),
 );
 
@@ -229,9 +230,10 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const appointments = await listDocuments<AppointmentRecord>('bookings', req.authToken!, {
       pageSize: 200,
+      orderBy: 'updatedAt desc',
     });
 
-    res.json(appointments.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+    res.json(appointments);
   }),
 );
 
@@ -243,10 +245,10 @@ adminRouter.get(
     const withdrawals = await listDocuments<WithdrawalRecord>(
       'withdrawals',
       req.authToken!,
-      { pageSize: 200 },
+      { pageSize: 200, orderBy: 'updatedAt desc' },
     );
 
-    res.json(withdrawals.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+    res.json(withdrawals);
   }),
 );
 

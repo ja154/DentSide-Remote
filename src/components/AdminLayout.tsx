@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
 import NotificationMenu from './NotificationMenu';
+import { getUserContactLabel } from '../lib/api';
 
 const ADMIN_NAV_ITEMS = [
   { label: 'Overview', hash: '#overview', icon: LayoutDashboard },
@@ -136,7 +137,7 @@ export default function AdminLayout({
             </span>
           </div>
           <span className="hidden sm:block text-[13px] text-[var(--color-ink-4)] font-medium">
-            {profile?.displayName || profile?.email}
+            {getUserContactLabel(profile, 'Admin')}
           </span>
           <div className="ds-avatar ds-avatar-md">
             <img

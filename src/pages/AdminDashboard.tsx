@@ -371,7 +371,7 @@ export default function AdminDashboard() {
                                 </div>
                                 <div>
                                   <p className="text-sm font-bold text-on-surface leading-tight">{user.displayName || 'Dr. Practitioner'}</p>
-                                  <p className="text-[10px] text-on-surface-variant font-medium">{user.email}</p>
+                                  <p className="text-[10px] text-on-surface-variant font-medium">{user.email || user.phoneNumber || 'No direct contact saved'}</p>
                                 </div>
                               </div>
                             </td>
@@ -499,12 +499,13 @@ export default function AdminDashboard() {
                         return (
                           <tr key={withdrawal.id} className="group hover:bg-surface-container-low transition-colors">
                             <td className="px-6 py-4">
-                              <p className="text-sm font-bold text-on-surface leading-tight">{withdrawal.email}</p>
+                              <p className="text-sm font-bold text-on-surface leading-tight">{withdrawal.email || withdrawal.phoneNumber || 'No contact saved'}</p>
                               <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-tighter">{withdrawal.provider}</p>
                             </td>
                             <td className="px-6 py-4 font-black text-on-surface">{formatCurrency(withdrawal.amount, withdrawal.currency)}</td>
                             <td className="px-6 py-4">
                               <p className="text-xs font-bold text-on-surface">{withdrawal.destinationLabel}</p>
+                              <p className="text-[10px] text-on-surface-variant font-medium">{withdrawal.destinationAccount || 'No payout account saved'}</p>
                               <p className="text-[10px] text-outline font-medium">{formatDate(withdrawal.createdAt)}</p>
                             </td>
                             <td className="px-6 py-4"><StatusBadge status={withdrawal.status} /></td>

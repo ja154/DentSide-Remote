@@ -1,13 +1,13 @@
 # DB Schema
 
-This document describes the current DentSide Remote application data model as it exists in Firestore and Firebase Storage.
+This document describes the current DentSide Remote application data model as it exists in Supabase Postgres and Supabase Storage.
 
 ## Storage Model
 
-- Primary database: Cloud Firestore
-- File storage: Firebase Storage
-- Timestamp format in Firestore: ISO 8601 strings
-- App-level database access pattern: frontend -> Express API -> Firestore REST wrapper
+- Primary database: Supabase Postgres
+- File storage: Supabase Storage
+- Timestamp format exposed by the app: ISO 8601 strings
+- App-level database access pattern: frontend -> Express API for app CRUD, plus direct Supabase Auth / Storage / targeted Realtime from the browser
 
 ## Collection Map
 
@@ -18,13 +18,14 @@ Account profile and role record for each authenticated user.
 
 Fields:
 - `uid: string`
-- `email: string`
+- `email?: string`
+- `phoneNumber?: string`
 - `role: 'dentist' | 'client' | 'admin'`
 - `createdAt: string`
 - `onboardingComplete: boolean`
 - `displayName?: string`
 - `photoURL?: string`
-- `authMethod?: 'google' | 'email'`
+- `authMethod?: 'google' | 'email' | 'phone'`
 - `experience?: string`
 - `licenses?: string[]`
 - `availability?: string`
@@ -34,7 +35,8 @@ Fields:
 
 Notes:
 - Document id is the same as `uid`.
-- `authMethod` records whether the profile was initialized from Google auth or email/password auth.
+- `authMethod` records whether the profile was initialized from Google auth, email/password auth, or phone OTP.
+- `email` is optional because phone-only accounts are supported.
 - `updatedAt` is optional for older documents, but current profile creation and update paths now write it.
 
 ### `gigs/{gigId}`
@@ -85,7 +87,7 @@ Fields:
 
 Notes:
 - Document id is the same as `userId`.
-- `documentPath` points into Firebase Storage when bucket-backed uploads are enabled.
+- `documentPath` points into Supabase Storage when bucket-backed uploads are enabled.
 
 ### `bookings/{bookingId}`
 
@@ -114,18 +116,28 @@ Payout requests and provider processing status.
 
 Fields:
 - `userId: string`
-- `email: string`
+- `email?: string`
+- `phoneNumber?: string`
 - `amount: number`
 - `currency: string`
 - `provider: 'stripe' | 'mpesa'`
 - `destinationLabel: string`
+- `destinationAccount?: string`
 - `status: 'pending_provider_setup' | 'queued' | 'paid' | 'failed'`
+- `providerRequestId?: string`
+- `providerStatus?: string`
+- `providerTransactionId?: string`
+- `providerUpdatedAt?: string`
+- `providerMetadata?: Record<string, unknown> | null`
+- `statusReason?: string`
 - `createdAt: string`
 - `updatedAt: string`
 
 Notes:
 - `userId` stores a user id as a string.
 - Document id is generated server-side.
+- M-Pesa withdrawals store the normalized destination number in `destinationAccount`.
+- Provider callback/idempotency metadata is persisted directly on the withdrawal record.
 
 ### `notifications/{notificationId}`
 
@@ -146,17 +158,17 @@ Notes:
 - `relatedId` is a generic foreign key and may reference a gig, booking, verification, or withdrawal id.
 - Document id is generated server-side.
 
-## Firebase Storage Layout
+## Supabase Storage Layout
 
 ### `verification-documents/{userId}/{filename}`
 
 Purpose:
 Stores uploaded verification files for dentists.
 
-Stored outside Firestore:
+Stored outside Postgres:
 - binary file contents
 
-Mirrored into Firestore verification metadata:
+Mirrored into verification metadata:
 - `documentName`
 - `documentPath`
 - `documentContentType`
@@ -164,7 +176,7 @@ Mirrored into Firestore verification metadata:
 
 ## Derived Models
 
-These are API response models and should not be modeled as their own Firestore collections:
+These are API response models and should not be modeled as their own first-class tables:
 
 ### Wallet summary
 
@@ -186,14 +198,15 @@ Filtering logic:
 The intended database operations pattern is:
 
 1. Frontend calls the Express API for app data.
-2. Express validates the Firebase bearer token.
+2. Express validates the Supabase bearer token.
 3. Route handlers validate payloads with Zod.
 4. Route handlers apply business rules and authorization checks.
-5. Firestore reads and writes go through the shared REST wrapper in `server/services/firebase-rest.ts`.
-6. Firestore Security Rules provide a second line of enforcement.
+5. Supabase PostgREST reads and writes go through the shared wrapper in [server/services/data-provider.ts](/home/jay/Desktop/DentSide-Remote/server/services/data-provider.ts).
+6. Supabase RLS provides a second line of enforcement for the realtime-enabled tables.
 
 Exception:
-- Verification files are uploaded directly from the authenticated frontend to Firebase Storage, then the file metadata is submitted to `/api/verify`.
+- Verification files are uploaded directly from the authenticated frontend to Supabase Storage, then the file metadata is submitted to `/api/verify`.
+- The browser subscribes directly to Supabase Realtime for `notifications` and `bookings`, while the Express API stays authoritative for business logic.
 
 ## ID Strategy
 
@@ -204,10 +217,10 @@ Exception:
 - `withdrawals/{withdrawalId}`: generated server-side
 - `notifications/{notificationId}`: generated server-side
 
-The API often returns an `id` field even when that `id` is not stored inside the Firestore document body.
+The API often returns an `id` field even when that `id` is not duplicated elsewhere in the row payload.
 
 ## Known Caveats
 
-- Firestore rules currently define `users`, `gigs`, `verifications`, `bookings`, and `withdrawals`.
-- The codebase also uses a `notifications` collection, so notification rules should be added or verified before relying on that collection in production.
+- Realtime is intentionally limited to `notifications` and `bookings`; other tables continue to flow through Express request/response cycles.
+- M-Pesa payout delivery still depends on valid Daraja credentials and a publicly reachable `APP_URL` for callbacks.
 - The schema file [schema.graphql](/home/jay/Desktop/DentSide-Remote/schema.graphql) is the canonical typed summary of this model.

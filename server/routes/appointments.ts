@@ -8,6 +8,7 @@ import { ensureProfile, loadUserProfile, requireAuth, requireRole } from '../mid
 import { createNotification } from './notifications.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { AppointmentRecord, BookingStatus } from '../types.ts';
+import { getContactLabel, getIdentityContactLabel } from '../utils/contact.ts';
 
 export const appointmentsRouter = Router();
 
@@ -22,21 +23,16 @@ appointmentsRouter.use(requireAuth, loadUserProfile, ensureProfile);
 appointmentsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const documents = await listDocuments<AppointmentRecord>('bookings', req.authToken!, {
-      pageSize: 100,
-      orderBy: 'updatedAt desc',
-    });
-
     const role = req.profile!.role;
     const uid = req.profile!.uid;
-
-    const appointments = documents
-      .filter((a) => {
-        if (role === 'admin') return true;
-        if (role === 'client') return a.clientId === uid;
-        return a.dentistId === uid;
-      })
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const appointments = await listDocuments<AppointmentRecord>('bookings', req.authToken!, {
+      pageSize: 100,
+      orderBy: 'updatedAt desc',
+      filters:
+        role === 'admin'
+          ? undefined
+          : [{ column: role === 'client' ? 'clientId' : 'dentistId', value: uid }],
+    });
 
     res.json(appointments);
   }),
@@ -90,7 +86,7 @@ appointmentsRouter.post(
     const appointment: AppointmentRecord = {
       clientId: req.profile!.uid,
       clientName:
-        req.profile!.displayName || req.authUser?.displayName || req.profile!.email,
+        getContactLabel(req.profile, '') || getIdentityContactLabel(req.authUser, 'Client'),
       dentistId: payload.dentistId,
       dentistName: payload.dentistName,
       reason: payload.reason,

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listDocuments } from '../services/data-provider.ts';
+import { getOptionalDocument, listDocuments } from '../services/data-provider.ts';
 import { ensureProfile, loadUserProfile, requireAuth } from '../middleware/auth.ts';
 import { asyncHandler } from '../utils/async-handler.ts';
 import type { UserProfile, WithId } from '../types.ts';
@@ -17,20 +17,31 @@ dentistsRouter.use(requireAuth, loadUserProfile, ensureProfile);
 dentistsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const documents = await listDocuments<UserProfile>('users', req.authToken!, {
-      pageSize: 200,
-    });
-
     const isAdmin = req.profile!.role === 'admin';
     const showAll = isAdmin && req.query.all === 'true';
     const search =
-      typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
+      typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+    const documents = await listDocuments<UserProfile>('users', req.authToken!, {
+      pageSize: 200,
+      orderBy: 'createdAt desc',
+      filters: [
+        { column: 'role', value: 'dentist' },
+        ...(showAll ? [] : [{ column: 'verificationStatus', value: 'approved' as const }]),
+      ],
+      or: search
+        ? [
+            { column: 'displayName', operator: 'ilike', value: `*${search}*` },
+            { column: 'experience', operator: 'ilike', value: `*${search}*` },
+            { column: 'availability', operator: 'ilike', value: `*${search}*` },
+          ]
+        : undefined,
+    });
 
     const dentists = documents
-      .filter((user) => user.role === 'dentist')
-      .filter((user) => showAll || user.verificationStatus === 'approved')
       .filter((user) => {
         if (!search) return true;
+        const normalizedSearch = search.toLowerCase();
         return [
           user.displayName || '',
           user.experience || '',
@@ -40,7 +51,7 @@ dentistsRouter.get(
         ]
           .join(' ')
           .toLowerCase()
-          .includes(search);
+          .includes(normalizedSearch);
       })
       .map(
         (user): Omit<WithId<UserProfile>, 'email' | 'createdAt'> & { id: string } => ({
@@ -74,13 +85,9 @@ dentistsRouter.get(
     const { dentistId } = req.params;
     const isAdmin = req.profile!.role === 'admin';
 
-    const documents = await listDocuments<UserProfile>('users', req.authToken!, {
-      pageSize: 1,
-    });
+    const dentist = await getOptionalDocument<UserProfile>(`users/${dentistId}`, req.authToken!);
 
-    const dentist = documents.find((u) => u.uid === dentistId && u.role === 'dentist');
-
-    if (!dentist) {
+    if (!dentist || dentist.role !== 'dentist') {
       res.status(404).json({ error: 'Dentist profile not found.', code: 'not_found' });
       return;
     }

@@ -1,5 +1,5 @@
 export type Role = 'dentist' | 'client' | 'admin';
-export type AuthMethod = 'google' | 'email';
+export type AuthMethod = 'google' | 'email' | 'phone';
 export type VerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 export type GigStatus = 'draft' | 'open' | 'closed';
 export type BookingStatus = 'requested' | 'confirmed' | 'completed' | 'cancelled';
@@ -19,15 +19,18 @@ export type NotificationType =
 
 export interface AuthIdentity {
   uid: string;
-  email: string;
+  email?: string;
+  phoneNumber?: string;
   displayName?: string;
   photoURL?: string;
   emailVerified: boolean;
+  phoneVerified: boolean;
 }
 
 export interface UserProfile {
   uid: string;
-  email: string;
+  email?: string;
+  phoneNumber?: string;
   displayName?: string;
   photoURL?: string;
   authMethod?: AuthMethod;
@@ -89,12 +92,20 @@ export interface AppointmentRecord {
 
 export interface WithdrawalRecord {
   userId: string;
-  email: string;
+  email?: string;
+  phoneNumber?: string;
   amount: number;
   currency: string;
   provider: WithdrawalProvider;
   destinationLabel: string;
+  destinationAccount?: string;
   status: WithdrawalStatus;
+  providerRequestId?: string;
+  providerStatus?: string;
+  providerTransactionId?: string;
+  providerUpdatedAt?: string;
+  providerMetadata?: Record<string, unknown> | null;
+  statusReason?: string;
   createdAt: string;
   updatedAt: string;
 }

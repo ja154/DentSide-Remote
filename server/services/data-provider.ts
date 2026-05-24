@@ -5,8 +5,32 @@ import type { AuthIdentity, WithId } from '../types.ts';
 type SupabaseUserPayload = {
   id: string;
   email?: string;
+  phone?: string;
   email_confirmed_at?: string | null;
+  phone_confirmed_at?: string | null;
   user_metadata?: Record<string, unknown>;
+};
+
+type QueryScalar = string | number | boolean;
+
+type ListFilter = {
+  column: string;
+  operator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in' | 'is';
+  value: QueryScalar | QueryScalar[] | null;
+};
+
+type ListOrCondition = {
+  column: string;
+  operator?: 'eq' | 'ilike';
+  value: QueryScalar;
+};
+
+export type ListDocumentsOptions = {
+  pageSize?: number;
+  orderBy?: string;
+  select?: string;
+  filters?: ListFilter[];
+  or?: ListOrCondition[];
 };
 
 type TokenCacheEntry = {
@@ -151,6 +175,82 @@ const toSupabaseOrder = (orderBy?: string) => {
   return `${column}.${direction.toLowerCase() === 'desc' ? 'desc' : 'asc'}`;
 };
 
+const formatFilterValue = (value: QueryScalar | null) => {
+  if (value === null) {
+    return 'null';
+  }
+
+  return String(value);
+};
+
+const formatInValue = (value: QueryScalar) => {
+  if (typeof value === 'string') {
+    return `"${value.replace(/"/g, '\\"')}"`;
+  }
+
+  return String(value);
+};
+
+const applyFilters = (searchParams: URLSearchParams, filters?: ListFilter[]) => {
+  filters?.forEach((filter) => {
+    const operator = filter.operator || 'eq';
+
+    if (operator === 'in') {
+      if (!Array.isArray(filter.value)) {
+        throw new AppError(`The "${filter.column}" filter must be an array for "in" queries.`, 500, 'internal_error');
+      }
+
+      searchParams.append(
+        filter.column,
+        `in.(${filter.value.map((value) => formatInValue(value)).join(',')})`,
+      );
+      return;
+    }
+
+    if (Array.isArray(filter.value)) {
+      throw new AppError(
+        `The "${filter.column}" filter cannot use an array with the "${operator}" operator.`,
+        500,
+        'internal_error',
+      );
+    }
+
+    searchParams.append(filter.column, `${operator}.${formatFilterValue(filter.value)}`);
+  });
+};
+
+const applyOrConditions = (searchParams: URLSearchParams, or?: ListOrCondition[]) => {
+  if (!or || or.length === 0) {
+    return;
+  }
+
+  const clauses = or.map((condition) => {
+    const operator = condition.operator || 'eq';
+    return `${condition.column}.${operator}.${formatFilterValue(condition.value)}`;
+  });
+
+  searchParams.set('or', `(${clauses.join(',')})`);
+};
+
+const buildListSearchParams = (options?: ListDocumentsOptions) => {
+  const searchParams = new URLSearchParams();
+  searchParams.set('select', options?.select || '*');
+
+  if (options?.pageSize) {
+    searchParams.set('limit', String(options.pageSize));
+  }
+
+  const supabaseOrder = toSupabaseOrder(options?.orderBy);
+  if (supabaseOrder) {
+    searchParams.set('order', supabaseOrder);
+  }
+
+  applyFilters(searchParams, options?.filters);
+  applyOrConditions(searchParams, options?.or);
+
+  return searchParams;
+};
+
 const cacheTokenIdentity = (token: string, identity: AuthIdentity) => {
   if (tokenCache.size >= TOKEN_CACHE_MAX_ENTRIES) {
     const firstKey = tokenCache.keys().next().value;
@@ -194,16 +294,18 @@ const mapSupabaseUser = (user: SupabaseUserPayload): AuthIdentity => {
         ? metadata.picture
         : undefined;
 
-  if (!user.id || !user.email) {
+  if (!user.id || (!user.email && !user.phone)) {
     throw new AppError('Invalid Supabase access token.', 401, 'unauthorized');
   }
 
   return {
     uid: user.id,
     email: user.email,
+    phoneNumber: user.phone,
     displayName,
     photoURL,
     emailVerified: Boolean(user.email_confirmed_at),
+    phoneVerified: Boolean(user.phone_confirmed_at),
   };
 };
 
@@ -304,28 +406,59 @@ export const setDocument = async <T extends object>(
   });
 };
 
+export const countDocuments = async (
+  collectionPath: string,
+  authToken: string,
+  options?: Pick<ListDocumentsOptions, 'filters' | 'or'>,
+): Promise<number> => {
+  void authToken;
+  assertSupabaseConfigured();
+
+  const searchParams = buildListSearchParams({
+    ...options,
+    select: 'id',
+    pageSize: 1,
+  });
+
+  let response: Response;
+
+  try {
+    response = await fetch(buildTableUrl(collectionPath, searchParams), {
+      method: 'HEAD',
+      headers: {
+        ...supabaseServiceHeaders(),
+        Prefer: 'count=exact',
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Upstream request failed.';
+    throw new AppError(message, 502, 'upstream_error');
+  }
+
+  if (!response.ok) {
+    throw buildUpstreamError(response.status, response.statusText);
+  }
+
+  const contentRange = response.headers.get('content-range');
+  if (!contentRange) {
+    return 0;
+  }
+
+  const [, total] = contentRange.split('/');
+  const parsed = Number(total);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 export const listDocuments = async <T>(
   collectionPath: string,
   authToken: string,
-  options?: { pageSize?: number; orderBy?: string },
+  options?: ListDocumentsOptions,
 ): Promise<Array<WithId<T>>> => {
   void authToken;
   assertSupabaseConfigured();
 
-  const searchParams = new URLSearchParams();
-  searchParams.set('select', '*');
-
-  if (options?.pageSize) {
-    searchParams.set('limit', String(options.pageSize));
-  }
-
-  const supabaseOrder = toSupabaseOrder(options?.orderBy);
-  if (supabaseOrder) {
-    searchParams.set('order', supabaseOrder);
-  }
-
   const rows = await requestJson<Array<Record<string, unknown>>>(
-    buildTableUrl(collectionPath, searchParams),
+    buildTableUrl(collectionPath, buildListSearchParams(options)),
     {
       method: 'GET',
       headers: supabaseServiceHeaders(),

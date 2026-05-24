@@ -24,23 +24,24 @@ notificationsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     const uid = req.profile!.uid;
+    const unreadOnly = req.query.unread === 'true';
 
     const documents = await listDocuments<NotificationRecord>(
       'notifications',
       req.authToken!,
-      { pageSize: 50 },
+      {
+        pageSize: 50,
+        orderBy: 'createdAt desc',
+        filters: [
+          { column: 'userId', value: uid },
+          ...(unreadOnly ? [{ column: 'read', value: false }] : []),
+        ],
+      },
     );
 
-    const unreadOnly = req.query.unread === 'true';
-
-    const notifications = documents
-      .filter((n) => n.userId === uid)
-      .filter((n) => !unreadOnly || !n.read)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
     res.json({
-      notifications,
-      unreadCount: notifications.filter((n) => !n.read).length,
+      notifications: documents,
+      unreadCount: documents.filter((n) => !n.read).length,
     });
   }),
 );
@@ -95,14 +96,18 @@ notificationsRouter.post(
     const documents = await listDocuments<NotificationRecord>(
       'notifications',
       req.authToken!,
-      { pageSize: 50 },
+      {
+        pageSize: 50,
+        filters: [
+          { column: 'userId', value: uid },
+          { column: 'read', value: false },
+        ],
+      },
     );
-
-    const unread = documents.filter((n) => n.userId === uid && !n.read);
 
     // Fire all updates in parallel - each is a light PATCH
     await Promise.all(
-      unread.map((n) =>
+      documents.map((n) =>
         setDocument(
           `notifications/${n.id}`,
           { read: true, updatedAt: timestamp },
@@ -112,7 +117,7 @@ notificationsRouter.post(
       ),
     );
 
-    res.json({ markedRead: unread.length });
+    res.json({ markedRead: documents.length });
   }),
 );
 
@@ -122,7 +127,7 @@ notificationsRouter.post(
  */
 export const createNotification = async (
   notification: Omit<NotificationRecord, 'read' | 'createdAt' | 'updatedAt'>,
-  token: string,
+  token = '',
 ): Promise<void> => {
   const id = randomUUID();
   const timestamp = new Date().toISOString();

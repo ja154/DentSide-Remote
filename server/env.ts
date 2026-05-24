@@ -62,6 +62,10 @@ const EnvSchema = z.object({
   MPESA_CONSUMER_SECRET: z.string().optional(),
   MPESA_SHORTCODE: z.string().optional(),
   MPESA_PASSKEY: z.string().optional(),
+  MPESA_INITIATOR_NAME: z.string().optional(),
+  MPESA_SECURITY_CREDENTIAL: z.string().optional(),
+  MPESA_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  MPESA_B2C_ENDPOINT: z.string().default('/mpesa/b2c/v3/paymentrequest'),
 });
 
 const parsedEnv = EnvSchema.parse(process.env);
@@ -91,6 +95,9 @@ export const env = {
     parsedEnv.MPESA_CONSUMER_KEY &&
       parsedEnv.MPESA_CONSUMER_SECRET &&
       parsedEnv.MPESA_SHORTCODE &&
-      parsedEnv.MPESA_PASSKEY,
+      parsedEnv.MPESA_PASSKEY &&
+      parsedEnv.MPESA_INITIATOR_NAME &&
+      parsedEnv.MPESA_SECURITY_CREDENTIAL &&
+      parsedEnv.APP_URL,
   ),
 };

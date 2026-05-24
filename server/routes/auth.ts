@@ -24,6 +24,7 @@ authRouter.post(
     const profile: UserProfile = {
       uid: req.authUser.uid,
       email: req.authUser.email,
+      phoneNumber: existingProfile?.phoneNumber || req.authUser.phoneNumber,
       displayName: existingProfile?.displayName || displayName || req.authUser.displayName,
       photoURL: req.authUser.photoURL || existingProfile?.photoURL,
       authMethod: existingProfile?.authMethod || authMethod,

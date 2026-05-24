@@ -34,3 +34,11 @@ services:
         sync: false
       - key: MPESA_PASSKEY
         sync: false
+      - key: MPESA_INITIATOR_NAME
+        sync: false
+      - key: MPESA_SECURITY_CREDENTIAL
+        sync: false
+      - key: MPESA_ENV
+        value: sandbox
+      - key: MPESA_B2C_ENDPOINT
+        value: /mpesa/b2c/v3/paymentrequest

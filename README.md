@@ -18,12 +18,12 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Tech Stack
 - **Frontend**: React 19, Vite, Tailwind CSS, Framer Motion, React Router
 - **Backend**: Express.js, Node.js
-- **Identity / Data / Storage**: Supabase Auth, Supabase Postgres via REST, Supabase Storage
+- **Identity / Data / Storage**: Supabase Auth, `@supabase/supabase-js`, Supabase Postgres via REST, Supabase Storage, Supabase Realtime
 - **AI**: Google Gemini API (@google/genai)
 
 ## Backend Surface
 - `GET /health`: health check with active auth/data/storage provider metadata plus Supabase, storage, Stripe, and M-Pesa readiness flags.
-- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Supabase bearer-token validation, including persisted auth-method metadata for profile onboarding.
+- `POST /api/auth/profile`, `GET /api/auth/profile`, `PATCH /api/auth/profile`: server-side profile creation and updates behind Supabase bearer-token validation, including persisted `google | email | phone` auth-method metadata plus phone-capable user profiles.
 - `GET /api/dentists`, `GET /api/dentists/:dentistId`: verified dentist directory for clients and admins.
 - `GET /api/gigs`, `GET /api/gigs/:gigId`, `POST /api/gigs`, `PATCH /api/gigs/:gigId`, `DELETE /api/gigs/:gigId`: backend structure for the gig marketplace collection.
 - `POST /api/verify`, `GET /api/verify/status`: verification request intake with server-side validation.
@@ -32,6 +32,7 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 - `GET /api/notifications`, `PATCH /api/notifications/:notificationId`, `POST /api/notifications/read-all`: in-app notification feed with read tracking.
 - `GET /api/admin/*`, `PATCH /api/admin/verifications/:userId`, `PATCH /api/admin/users/:userId/role`, `PATCH /api/admin/withdrawals/:withdrawalId`: admin audit and moderation routes.
 - `POST /api/webhooks/stripe`: Stripe webhook signature verification scaffold.
+- `POST /api/webhooks/mpesa/result`, `POST /api/webhooks/mpesa/timeout`: M-Pesa payout callback endpoints for asynchronous settlement updates.
 
 ## Admin Console
 - Admin users now have a dedicated `/admin` command center for:
@@ -44,12 +45,12 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Frontend Integration Status
 - Client network and appointment screens now use the live `/api/dentists` and `/api/appointments` routes for verified search, consult creation, and client-side cancellation.
 - Client and admin users now share a live `/gig-studio` surface for creating, editing, searching, and soft-closing gigs through `/api/gigs`.
-- The dentist dashboard now shows live consult queue actions from `/api/appointments` and live wallet metrics from `/api/withdraw/summary`.
-- The wallet screen can now submit withdrawal requests through `POST /api/withdraw`.
+- The dentist dashboard now shows live consult queue actions from `/api/appointments`, Supabase Realtime booking refreshes, and live wallet metrics from `/api/withdraw/summary`.
+- The wallet screen can now submit payout requests through `POST /api/withdraw`, including M-Pesa destination numbers when that provider is selected.
 - The verification flow now uploads real files into Supabase Storage before submitting `/api/verify` when `VITE_SUPABASE_STORAGE_BUCKET` is configured.
-- A shared in-app notification menu now reads from `/api/notifications`, and appointment/admin actions emit notification records for affected users.
+- A shared in-app notification menu now reads from `/api/notifications`, refreshes through Supabase Realtime, and appointment/admin actions emit notification records for affected users.
 - The admin command center now includes user role changes and withdrawal queue actions in addition to the earlier verification moderation tools.
-- The authentication screen now supports Supabase-backed Google and email/password sign-in, while onboarding uses shared auth state to route authenticated users who still need a profile.
+- The authentication screen now supports Supabase-backed phone OTP, Google, and email/password sign-in, while onboarding uses shared auth state to route authenticated users who still need a profile.
 
 ## Setup & Running Locally
 1. Clone the repository.
@@ -65,18 +66,21 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_SUPABASE_STORAGE_BUCKET`
+   - `VITE_DEFAULT_COUNTRY_CODE=254`
 7. In Supabase Auth, enable:
+   - Phone
    - Google
    - Email
-8. Run [supabase/bootstrap.sql](/home/jay/Desktop/DentSide-Remote/supabase/bootstrap.sql) in the Supabase SQL editor to create the required tables, indexes, and a private verification bucket/policy baseline.
-9. Match `SUPABASE_STORAGE_BUCKET` and `VITE_SUPABASE_STORAGE_BUCKET` to the bucket you create there. The included SQL uses `verification-documents` by default.
-10. Optional integrations in `server/.env`:
+8. Run [supabase/bootstrap.sql](/home/jay/Desktop/DentSide-Remote/supabase/bootstrap.sql) in the Supabase SQL editor to create the required tables, indexes, realtime policies/publication entries, and a private verification bucket/policy baseline.
+9. For existing Supabase environments, also run [supabase/migrations/20260524_phone_auth.sql](/home/jay/Desktop/DentSide-Remote/supabase/migrations/20260524_phone_auth.sql) to add phone-capable profile fields and withdrawal/provider metadata columns.
+10. Match `SUPABASE_STORAGE_BUCKET` and `VITE_SUPABASE_STORAGE_BUCKET` to the bucket you create there. The included SQL uses `verification-documents` by default.
+11. Optional integrations in `server/.env`:
    - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-   - M-Pesa: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`
-11. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
-12. Run `npm run dev` to start the development server.
-13. Open `http://localhost:3000` in your browser.
-14. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
+   - M-Pesa: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`, `MPESA_INITIATOR_NAME`, `MPESA_SECURITY_CREDENTIAL`, optional `MPESA_ENV`, optional `MPESA_B2C_ENDPOINT`
+12. `GEMINI_API_KEY` is optional because the app still supports BYOK in the dashboard UI.
+13. Run `npm run dev` to start the development server.
+14. Open `http://localhost:3000` in your browser.
+15. If your frontend will run on a different origin than the backend, set `VITE_API_BASE_URL` in the frontend environment to the deployed API base URL.
 
 The backend still falls back to matching keys in the root `.env` for compatibility, but `server/.env` is now the preferred home for backend-only secrets and deployment settings.
 
@@ -108,6 +112,7 @@ Use this mode when the React frontend is hosted separately and Render is only se
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_SUPABASE_STORAGE_BUCKET`
+   - `VITE_DEFAULT_COUNTRY_CODE=254`
 
 When `SERVE_STATIC_FRONTEND=false`, the Render service behaves as an API-only backend and does not require a `dist` build.
 
@@ -118,5 +123,7 @@ When `SERVE_STATIC_FRONTEND=false`, the Render service behaves as an API-only ba
 - Security headers are enforced with Helmet, including stricter referrer behavior.
 - Supabase-protected routes now require bearer-token validation on the server before profile, verification, gigs, appointments, withdrawals, or admin actions run.
 - Wallet, verification, gigs, and appointment structures now flow through Express routes instead of browser-side writes.
+- Phone-only accounts are supported without forcing an email address, while verification records can still capture an operational email separately.
+- Realtime subscriptions are limited to `notifications` and `bookings`, with RLS select policies and publication membership added specifically for those tables.
 - Admin moderation now has a first-party UI instead of API-only routes.
 - Split frontend/backend deployments are supported by `VITE_API_BASE_URL`, CORS allowlists, Supabase-backed auth/storage clients, and an API-only server mode for hosts such as Render.

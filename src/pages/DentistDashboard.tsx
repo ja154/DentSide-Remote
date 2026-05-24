@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import DentistLayout from '../components/DentistLayout';
 import { apiRequest, type Appointment, type WalletSummary } from '../lib/api';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 type AppointmentActionState = {
   appointmentId: string;
@@ -27,7 +28,11 @@ export default function DentistDashboard() {
   const [actionState, setActionState] = useState<AppointmentActionState>(null);
 
   const profileStrength = useMemo(() => {
-    const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
+    const points = [
+      profile?.displayName,
+      profile?.email || profile?.phoneNumber,
+      profile?.photoURL,
+    ].filter(Boolean).length;
     return Math.round((points / 3) * 100);
   }, [profile]);
 
@@ -62,6 +67,32 @@ export default function DentistDashboard() {
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (!profile?.uid) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`bookings:${profile.uid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+          filter: `dentistId=eq.${profile.uid}`,
+        },
+        () => {
+          void loadDashboardData();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [profile?.uid]);
 
   const handleAIMatch = async () => {
     if (!apiKey) {

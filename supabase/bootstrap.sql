@@ -6,10 +6,11 @@ create extension if not exists pgcrypto;
 create table if not exists public.users (
   id text primary key,
   "uid" text not null unique,
-  email text not null,
+  email text,
+  "phoneNumber" text,
   "displayName" text,
   "photoURL" text,
-  "authMethod" text check ("authMethod" in ('google', 'email')),
+  "authMethod" text check ("authMethod" in ('google', 'email', 'phone')),
   role text not null check (role in ('dentist', 'client', 'admin')),
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz,
@@ -72,12 +73,20 @@ create table if not exists public.bookings (
 create table if not exists public.withdrawals (
   id text primary key,
   "userId" text not null,
-  email text not null,
+  email text,
+  "phoneNumber" text,
   amount numeric(12, 2) not null,
   currency text not null,
   provider text not null check (provider in ('stripe', 'mpesa')),
   "destinationLabel" text not null,
+  "destinationAccount" text,
   status text not null check (status in ('pending_provider_setup', 'queued', 'paid', 'failed')),
+  "providerRequestId" text,
+  "providerStatus" text,
+  "providerTransactionId" text,
+  "providerUpdatedAt" timestamptz,
+  "providerMetadata" jsonb,
+  "statusReason" text,
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now()
 );
@@ -109,6 +118,7 @@ create table if not exists public.notifications (
 
 create index if not exists idx_users_role on public.users (role);
 create index if not exists idx_users_verification_status on public.users ("verificationStatus");
+create index if not exists idx_users_phone_number on public.users ("phoneNumber");
 create index if not exists idx_gigs_created_by on public.gigs ("createdBy");
 create index if not exists idx_gigs_updated_at on public.gigs ("updatedAt" desc);
 create index if not exists idx_verifications_user_id on public.verifications ("userId");
@@ -117,6 +127,10 @@ create index if not exists idx_bookings_dentist_id on public.bookings ("dentistI
 create index if not exists idx_bookings_updated_at on public.bookings ("updatedAt" desc);
 create index if not exists idx_withdrawals_user_id on public.withdrawals ("userId");
 create index if not exists idx_withdrawals_updated_at on public.withdrawals ("updatedAt" desc);
+create index if not exists idx_withdrawals_phone_number on public.withdrawals ("phoneNumber");
+create unique index if not exists idx_withdrawals_provider_request_id
+  on public.withdrawals ("providerRequestId")
+  where "providerRequestId" is not null;
 create index if not exists idx_notifications_user_id on public.notifications ("userId");
 create index if not exists idx_notifications_created_at on public.notifications ("createdAt" desc);
 
@@ -126,6 +140,61 @@ alter table public.verifications enable row level security;
 alter table public.bookings enable row level security;
 alter table public.withdrawals enable row level security;
 alter table public.notifications enable row level security;
+
+drop policy if exists "notifications select own" on public.notifications;
+create policy "notifications select own"
+on public.notifications
+for select
+to authenticated
+using (
+  "userId" = auth.uid()::text
+  or exists (
+    select 1
+    from public.users
+    where id = auth.uid()::text
+      and role = 'admin'
+  )
+);
+
+drop policy if exists "bookings select own" on public.bookings;
+create policy "bookings select own"
+on public.bookings
+for select
+to authenticated
+using (
+  "clientId" = auth.uid()::text
+  or "dentistId" = auth.uid()::text
+  or exists (
+    select 1
+    from public.users
+    where id = auth.uid()::text
+      and role = 'admin'
+  )
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'notifications'
+  ) then
+    execute 'alter publication supabase_realtime add table public.notifications';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'bookings'
+  ) then
+    execute 'alter publication supabase_realtime add table public.bookings';
+  end if;
+end;
+$$;
 
 insert into storage.buckets (id, name, public)
 values ('verification-documents', 'verification-documents', false)

@@ -59,7 +59,11 @@ export default function IdentityVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const profileStrength = useMemo(() => {
-    const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
+    const points = [
+      profile?.displayName,
+      profile?.email || profile?.phoneNumber,
+      profile?.photoURL,
+    ].filter(Boolean).length;
     return Math.round((points / 3) * 100);
   }, [profile]);
 

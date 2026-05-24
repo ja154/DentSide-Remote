@@ -28,7 +28,7 @@ export const ExpectedAISchema = z.array(
   }),
 );
 
-export const AuthMethodSchema = z.enum(['google', 'email']);
+export const AuthMethodSchema = z.enum(['google', 'email', 'phone']);
 
 export const AuthProfileCreateSchema = z.object({
   role: z.enum(['dentist', 'client']),
@@ -108,6 +108,7 @@ export const WithdrawalRequestSchema = z.object({
     .transform((value) => value.toUpperCase()),
   provider: z.enum(['stripe', 'mpesa']),
   destinationLabel: z.string().trim().min(3).max(120),
+  destinationAccount: z.string().trim().min(3).max(160).optional(),
 });
 
 export const AdminVerificationDecisionSchema = z.object({

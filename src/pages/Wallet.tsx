@@ -20,6 +20,7 @@ export default function Wallet() {
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [withdrawalProvider, setWithdrawalProvider] = useState<WithdrawalProvider>('stripe');
   const [destinationLabel, setDestinationLabel] = useState('');
+  const [destinationAccount, setDestinationAccount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadWallet = async () => {
@@ -45,7 +46,14 @@ export default function Wallet() {
     loadWallet();
   }, []);
 
+  useEffect(() => {
+    if (withdrawalProvider === 'mpesa' && !destinationAccount && profile?.phoneNumber) {
+      setDestinationAccount(profile.phoneNumber);
+    }
+  }, [destinationAccount, profile?.phoneNumber, withdrawalProvider]);
+
   const currency = walletSummary?.defaultCurrency || 'USD';
+  const payoutCurrency = withdrawalProvider === 'mpesa' ? 'KES' : currency;
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 
@@ -65,6 +73,11 @@ export default function Wallet() {
       return;
     }
 
+    if (withdrawalProvider === 'mpesa' && destinationAccount.trim().length < 10) {
+      setError('Enter the M-Pesa number that should receive this payout.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -72,9 +85,11 @@ export default function Wallet() {
         method: 'POST',
         body: JSON.stringify({
           amount,
-          currency,
+          currency: payoutCurrency,
           provider: withdrawalProvider,
           destinationLabel: destinationLabel.trim(),
+          destinationAccount:
+            withdrawalProvider === 'mpesa' ? destinationAccount.trim() : undefined,
         }),
       });
 
@@ -84,6 +99,7 @@ export default function Wallet() {
       );
       setWithdrawalAmount('');
       setDestinationLabel('');
+      setDestinationAccount(withdrawalProvider === 'mpesa' ? profile?.phoneNumber || '' : '');
       setIsWithdrawFormOpen(false);
       await loadWallet();
     } catch (submitError) {
@@ -180,7 +196,7 @@ export default function Wallet() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div>
-                <label className="block text-[10px] font-bold text-outline uppercase tracking-wider mb-2">Amount ({currency})</label>
+                <label className="block text-[10px] font-bold text-outline uppercase tracking-wider mb-2">Amount ({payoutCurrency})</label>
                 <div className="relative flex items-center">
                   <span className="absolute left-4 text-slate-400 font-bold">$</span>
                   <input
@@ -215,6 +231,18 @@ export default function Wallet() {
                   onChange={(e) => setDestinationLabel(e.target.value)}
                 />
               </div>
+              {withdrawalProvider === 'mpesa' && (
+                <div>
+                  <label className="block text-[10px] font-bold text-outline uppercase tracking-wider mb-2">M-Pesa Number</label>
+                  <input
+                    type="tel"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-4 px-4 font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="07XXXXXXXX"
+                    value={destinationAccount}
+                    onChange={(e) => setDestinationAccount(e.target.value)}
+                  />
+                </div>
+              )}
               <div className="pt-6">
                 <button
                   onClick={handleWithdrawalSubmit}
@@ -288,7 +316,11 @@ export default function Wallet() {
                           </div>
                           <div>
                             <p className="font-bold text-on-surface">Payout to {record.destinationLabel}</p>
-                            <p className="text-xs text-slate-500">{record.provider === 'mpesa' ? 'M-Pesa Mobile' : 'Stripe Transfer'}</p>
+                            <p className="text-xs text-slate-500">
+                              {record.provider === 'mpesa'
+                                ? record.destinationAccount || 'M-Pesa Mobile'
+                                : record.destinationAccount || 'Stripe Transfer'}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -301,10 +333,19 @@ export default function Wallet() {
                       </td>
                       <td className="px-8 py-6 text-right">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                          record.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          record.status === 'paid'
+                            ? 'bg-green-100 text-green-700'
+                            : record.status === 'failed'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-blue-100 text-blue-700'
                         }`}>
                           {record.status.replace(/_/g, ' ')}
                         </span>
+                        {record.statusReason && (
+                          <p className="mt-2 text-[10px] text-slate-500 font-medium max-w-[14rem] ml-auto">
+                            {record.statusReason}
+                          </p>
+                        )}
                       </td>
                     </tr>
                   ))
